@@ -278,6 +278,7 @@ def run_crop(crop, commodity_id, from_date, to_date):
     log.info(f"\n{'='*50}\n  {crop}\n{'='*50}")
     if from_date is None:
         from_date = detect_start(crop)
+    
     if from_date > to_date:
         log.info("  Up to date, retraining")
         csv = os.path.join(DATA_DIR, f"{crop}_Clean_data.csv")

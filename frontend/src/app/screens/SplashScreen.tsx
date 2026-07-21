@@ -30,13 +30,13 @@ export function SplashScreen() {
 
       <div className="relative z-10 flex flex-col items-center justify-between min-h-screen p-6">
         <div className="flex-1 flex flex-col items-center justify-center pt-12">
-          <div className="w-24 h-24 bg-white/15 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-lg border border-white/20">
-            <Sprout className="w-14 h-14 text-white" strokeWidth={2.5} />
-          </div>
+         <div className="w-24 h-24 bg-white/15 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-lg border border-white/20">
+  <Sprout className="w-14 h-14 text-white" strokeWidth={2.5} />
+</div>
 
-          <h1 className="text-4xl mb-2 text-white drop-shadow-lg">
-            MandiQ
-          </h1>
+          <h1 className="text-5xl mb-2 font-extrabold drop-shadow-lg tracking-wide">
+  <span className="text-white">Mandi</span><span className="text-[#4ade80]">Q</span>
+</h1>
 
           <p className="text-lg text-[#e8f5e9] mb-6 drop-shadow">
             {t('app.tagline')}
