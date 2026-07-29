@@ -15,6 +15,7 @@ DB_PATH = "data/mandiq.db"
 
 
 class MandiDB:
+    
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
         self._init_db()
@@ -68,8 +69,27 @@ class MandiDB:
                     error       TEXT,
                     updated_at  TEXT DEFAULT (datetime('now'))
                 );
+                CREATE TABLE IF NOT EXISTS users (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mobile          TEXT    UNIQUE NOT NULL,
+                    role            TEXT    DEFAULT 'farmer',
+                    name            TEXT,
+                    farmer_details  TEXT,
+                    created_at      TEXT    DEFAULT (datetime('now'))
+                );
+                
             """)
         log.info(f"DB ready: {self.db_path}")
+    def get_or_create_user(self, mobile: str, role: str = 'farmer') -> dict:
+        with self._conn() as con:
+            con.execute("INSERT OR IGNORE INTO users (mobile, role) VALUES (?, ?)", (mobile, role))
+            row = con.execute("SELECT * FROM users WHERE mobile = ?", (mobile,)).fetchone()
+        return dict(row)
+
+    def get_user_by_id(self, user_id: int) -> dict:
+        with self._conn() as con:
+            row = con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return dict(row) if row else None
 
     # ─── Upsert records ────────────────────────────────────────────────────────
     def upsert_records(self, records: List[Dict[str, Any]]) -> int:
@@ -278,3 +298,12 @@ class MandiDB:
                 "DELETE FROM price_records WHERE commodity = ? AND market = ?",
                 (commodity, market),
             )
+    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
+        import json
+        with self._conn() as con:
+            con.execute("""
+                UPDATE users 
+                SET name = ?, role = ?, farmer_details = ?
+                WHERE id = ?
+            """, (name, user_type, json.dumps(farmer_details), user_id))
+            

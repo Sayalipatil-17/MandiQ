@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronDown, TrendingUp, TrendingDown, Info, Bell, Sparkles, BarChart3, Building2, Sprout, Loader2, Check, Search } from 'lucide-react';
+import { ChevronDown, TrendingUp, TrendingDown, Info, Bell, Sparkles, BarChart3, Building2, Sprout, Loader2, Check, Search, Star, Minus, ChevronUp, Navigation } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import { mandiApi, type Prediction, type PriceRecord } from '../../mandiq-api';
 import { useT } from '../../i18n';
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 const MARKETS = [
   { value: 'Azadpur APMC', label: 'Azadpur Mandi', sublabel: 'Delhi (North)', emoji: '🏪', km: '12 km' },
   { value: 'Keshopur APMC', label: 'Keshopur Mandi', sublabel: 'Delhi (West)', emoji: '🏬', km: '18 km' },
-  { value: 'Shahdara APMC', label: 'Shahdara Mandi', sublabel: 'Delhi (East)', emoji: '🏢', km: '25 km' },
 ];
 
 const CROPS = [
@@ -22,7 +22,7 @@ const CROPS = [
 const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
 
 function weekday(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 function prettyDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -68,14 +68,52 @@ function ChartSection({ forecastOnly }: { forecastOnly: { label: string; price: 
 }
 
 export function HomeScreen() {
-  const navigate = useNavigate();
-  const { t } = useT();
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('mandiq_token');
+    if (!token) return;
+    fetch(`${BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(d => setUserName(d.name || ''));
+  }, []);
+    const navigate = useNavigate();
+    const { t } = useT();
 
   // Selection state
   const [selectedMarket, setSelectedMarket] = useState(localStorage.getItem('selectedMarket') || '');
   const [selectedCrop, setSelectedCrop] = useState(localStorage.getItem('selectedCrop') || '');
   const [showMandiDropdown, setShowMandiDropdown] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [compareData, setCompareData] = useState<any[]>([]);
+  const [compareLoading, setCompareLoading] = useState(false);
+
+  const MM = [
+    { value: 'Azadpur APMC', name: 'आज़ादपुर मंडी', emoji: '🏪', transportCost: 120 },
+    { value: 'Keshopur APMC', name: 'केशोपुर मंडी', emoji: '🏬', transportCost: 180 },
+  ];
+
+  async function loadCompare() {
+    if (compareData.length) { setShowCompare(v => !v); return; }
+    setShowCompare(true);
+    setCompareLoading(true);
+    const crop = selectedCrop || 'Tomato';
+    const r = await Promise.all(MM.map(async m => {
+      let price = 0, prevPrice = 0;
+      try {
+        const h = await mandiApi.getHistory(crop, m.value);
+        if (h.length) { price = Math.round(h[h.length-1].modal_price); prevPrice = h.length > 1 ? Math.round(h[h.length-2].modal_price) : price; }
+      } catch {}
+      const change = price - prevPrice;
+      const netProfit = price > 0 ? price - m.transportCost : 0;
+      return { ...m, price, change, netProfit };
+    }));
+    const withPrice = r.filter(x => x.price > 0);
+    const bestVal = withPrice.length ? withPrice.reduce((a,b) => b.netProfit > a.netProfit ? b : a).value : null;
+    setCompareData(r.map(x => ({ ...x, isBest: x.value === bestVal })));
+    setCompareLoading(false);
+  }
 
   // Data state
   const [loading, setLoading] = useState(false);
@@ -107,14 +145,35 @@ export function HomeScreen() {
   // Price calculations
   const lastRecord = history.length ? history[history.length - 1] : null;
   const todayPrice = lastRecord ? Math.round(lastRecord.modal_price) : 0;
-  const yesterdayPrice = history.length > 1 ? Math.round(history[history.length - 2].modal_price) : todayPrice;
+  const yesterdayRecord = history.length > 1 ? history[history.length - 2] : null;
+  const yesterdayPrice = yesterdayRecord ? Math.round(yesterdayRecord.modal_price) : todayPrice;
+  const yesterdayDateStr = yesterdayRecord
+    ? new Date(yesterdayRecord.date).toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' })
+    : 'कल';
   const priceDiff = todayPrice - yesterdayPrice;
+
+  const selectedPred = selectedDayIdx > 0 && selectedDayIdx <= predictions.length
+    ? predictions[selectedDayIdx - 1]
+    : null;
 
   const displayPrice = selectedDayIdx === 0
     ? todayPrice
-    : selectedDayIdx <= predictions.length
-      ? Math.round(predictions[selectedDayIdx - 1].predicted_price)
+    : selectedPred
+      ? Math.round(selectedPred.predicted_price)
       : todayPrice;
+
+  // Today's range: based on last 7 days price volatility (std dev)
+  const todayRange = (() => {
+    const recent = history.slice(-7).map(h => h.modal_price);
+    if (recent.length < 2) return { low: Math.round(todayPrice * 0.95), high: Math.round(todayPrice * 1.05) };
+    const mean = recent.reduce((s, v) => s + v, 0) / recent.length;
+    const std = Math.sqrt(recent.reduce((s, v) => s + (v - mean) ** 2, 0) / recent.length);
+    return { low: Math.round(todayPrice - std), high: Math.round(todayPrice + std) };
+  })();
+
+  const displayRange = selectedPred
+    ? { low: Math.round(selectedPred.lower_bound), high: Math.round(selectedPred.upper_bound) }
+    : todayRange;
 
   let bestPrice = todayPrice, bestDay = '', bestIdx = -1;
   predictions.forEach((p, i) => {
@@ -130,12 +189,16 @@ export function HomeScreen() {
   const shouldSell = gain <= 0;
 
   const dayStrip = [
-    { label: 'Aaj', sublabel: 'Today', price: todayPrice, idx: 0 },
-    ...predictions.slice(0, 6).map((p, i) => ({
-      label: weekday(p.date), sublabel: prettyDate(p.date),
+  { label: 'Aaj', sublabel: new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short'}), price: todayPrice, idx: 0 },
+  ...predictions
+    .filter(p => new Date(p.date) > new Date())  // sirf future dates
+    .slice(0, 6)
+    .map((p, i) => ({
+      label: new Date(p.date).toLocaleDateString('en-IN', {day:'numeric', month:'short'}),
+      sublabel: '',
       price: Math.round(p.predicted_price), idx: i + 1,
     })),
-  ];
+];
 
   const recentActual = history.slice(-4).map(h => ({ label: weekday(h.date), actual: Math.round(h.modal_price), forecast: null }));
   const futureData = predictions.map(p => ({ label: weekday(p.date), actual: null, forecast: Math.round(p.predicted_price) }));
@@ -150,12 +213,12 @@ export function HomeScreen() {
       <div className="bg-gradient-to-br from-[#1e5631] via-[#2d6a3e] to-[#16a34a] px-6 pt-8 pb-8 rounded-b-[2rem] shadow-lg">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center border border-white/30">
-              <Sprout className="w-6 h-6 text-white" />
+            <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white/40">
+              <img src="/kisan.png" alt="kisan" className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="text-white/70 text-xs">🙏 नमस्ते</p>
-              <p className="text-white font-semibold">Ramesh Kumar</p>
+              <p className="text-white font-semibold">{userName || 'Namaste'}</p>
             </div>
           </div>
           <button onClick={() => navigate('/alerts')} className="relative p-2.5 bg-white/20 backdrop-blur rounded-xl border border-white/30">
@@ -228,7 +291,9 @@ export function HomeScreen() {
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
           {loading ? 'लोड हो रहा है…' : 'कीमत देखें'}
         </button>
+
       </div>
+
 
       {/* ── ERROR ── */}
       {error && (
@@ -246,19 +311,35 @@ export function HomeScreen() {
 
           {/* AAJ KI KIMAT */}
           <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">आज की कीमत</p>
-                <p className="text-xs text-gray-400">{selectedCropObj?.emoji} {selectedCropObj?.hindi} · {selectedMandi?.label}</p>
+                <p className="text-sm font-bold text-gray-800">{selectedCropObj?.emoji} {selectedCropObj?.hindi} · <span className="font-bold text-gray-800">{selectedMandi?.label}</span></p>
               </div>
               <div className={`px-3 py-1 rounded-full text-xs flex items-center gap-1 font-semibold ${priceDiff >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
                 {priceDiff >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                {priceDiff >= 0 ? '+' : ''}₹{Math.abs(priceDiff)} कल से
+                {priceDiff >= 0 ? '+' : ''}₹{Math.abs(priceDiff)} | {yesterdayDateStr}
               </div>
             </div>
 
-            <p className="text-5xl font-bold text-[#1b4228] mb-1">₹{displayPrice.toLocaleString()}</p>
-            <p className="text-gray-400 text-sm mb-4">प्रति क्विंटल</p>
+            {/* Price + Range box */}
+            <div className="bg-[#f0f7f1] rounded-2xl px-4 py-3 mb-4">
+              <div className="flex items-baseline gap-2 mb-3">
+                <p className="text-5xl font-bold text-[#1b4228]">₹{displayPrice.toLocaleString()}</p>
+                <p className="text-gray-400 text-sm">प्रति क्विंटल{selectedPred ? ' · अनुमानित' : ''}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">न्यूनतम</p>
+                  <p className="text-base font-semibold text-gray-700">₹{displayRange.low.toLocaleString()}</p>
+                </div>
+                <div className="w-px h-8 bg-gray-300" />
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">अधिकतम</p>
+                  <p className="text-base font-semibold text-gray-700">₹{displayRange.high.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
 
             {/* 7-day strip */}
             <p className="text-xs text-gray-400 mb-2">दिन चुनें:</p>
@@ -271,6 +352,62 @@ export function HomeScreen() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* MANDI TULNA - inline expandable */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <button onClick={loadCompare} className="w-full px-4 py-3.5 flex items-center gap-3 active:scale-95 transition-all">
+              <div className="w-10 h-10 bg-[#e8f5e9] rounded-xl flex items-center justify-center flex-shrink-0">
+                <BarChart3 className="w-5 h-5 text-[#2d6a3e]" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold text-gray-800">मंडी तुलना</p>
+                <p className="text-xs text-gray-400">कौन सी मंडी सबसे अच्छी?</p>
+              </div>
+              {showCompare ? <ChevronUp className="w-4 h-4 text-[#2d6a3e]" /> : <ChevronDown className="w-4 h-4 text-[#2d6a3e]" />}
+            </button>
+
+            {showCompare && (
+              <div className="px-4 pb-4 space-y-3">
+                {compareLoading && <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-[#2d6a3e]" /></div>}
+                {!compareLoading && compareData.filter(m => m.isBest).map(m => (
+                  <div key={m.value} className="bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-2xl p-4 text-white">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+                      <p className="text-xs font-semibold">यहाँ बेचना सबसे फायदेमंद</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-bold">{m.emoji} {m.name}</p>
+                      <p className="text-xl font-bold">₹{m.price.toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs text-white/70 text-right">प्रति क्विंटल</p>
+                  </div>
+                ))}
+                {!compareLoading && compareData.map(m => (
+                  <div key={m.value} className={`bg-gray-50 rounded-2xl p-4 border-2 ${m.isBest ? 'border-[#f97316]/30' : 'border-transparent'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{m.emoji}</span>
+                        <p className="text-sm font-semibold text-gray-800">{m.name}</p>
+                      </div>
+                      <button onClick={() => window.open(`https://maps.google.com/?q=${m.name}+Delhi`, '_blank')}
+                        className="p-1.5 rounded-lg border border-[#2d6a3e] text-[#2d6a3e]">
+                        <Navigation className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-end justify-between mt-2">
+                      <p className="text-2xl font-bold text-[#1b4228]">{m.price > 0 ? `₹${m.price.toLocaleString()}` : 'N/A'}</p>
+                      {m.price > 0 && (
+                        <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-xl ${m.change > 0 ? 'bg-green-50 text-green-700' : m.change < 0 ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                          {m.change > 0 ? <TrendingUp className="w-3 h-3" /> : m.change < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                          {m.change > 0 ? `कल से ₹${m.change} बढ़ी` : m.change < 0 ? `कल से ₹${Math.abs(m.change)} घटी` : 'कल जैसी कीमत'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* AI RECOMMENDATION */}
@@ -308,21 +445,18 @@ export function HomeScreen() {
           {/* CHART TOGGLE */}
           <ChartSection forecastOnly={forecastOnly} />
 
-          {/* QUICK ACTIONS - sirf 2 */}
-          <div className="grid grid-cols-2 gap-3 pb-2">
-            <button onClick={() => navigate('/compare')}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-start gap-2.5 hover:border-[#2d6a3e]/40 hover:shadow-md transition-all active:scale-95">
-              <div className="w-10 h-10 bg-[#e8f5e9] rounded-xl flex items-center justify-center"><BarChart3 className="w-5 h-5 text-[#2d6a3e]" /></div>
-              <p className="text-sm font-medium text-gray-800">मंडी तुलना</p>
-              <p className="text-xs text-gray-400">कौन सी मंडी सबसे अच्छी?</p>
-            </button>
-            <button onClick={() => navigate('/mandi-info')}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-start gap-2.5 hover:border-[#2d6a3e]/40 hover:shadow-md transition-all active:scale-95">
-              <div className="w-10 h-10 bg-[#fff7ed] rounded-xl flex items-center justify-center"><Building2 className="w-5 h-5 text-[#f97316]" /></div>
-              <p className="text-sm font-medium text-gray-800">मंडी जानकारी</p>
-              <p className="text-xs text-gray-400">सभी फसलों के भाव</p>
-            </button>
-          </div>
+          {/* MANDI JANKARI - flat horizontal strip */}
+          <button onClick={() => navigate('/mandi-info')}
+            className="w-full bg-[#fff7ed] rounded-2xl px-4 py-3.5 border border-[#f97316]/20 flex items-center gap-3 hover:border-[#f97316]/50 hover:shadow-sm transition-all active:scale-95 mb-2">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Building2 className="w-5 h-5 text-[#f97316]" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-gray-800">मंडी जानकारी</p>
+              <p className="text-xs text-gray-400">सभी फसलों के भाव देखें</p>
+            </div>
+            <span className="text-xs text-[#f97316] font-semibold">देखें →</span>
+          </button>
         </div>
       )}
 

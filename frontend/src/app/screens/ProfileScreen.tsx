@@ -1,64 +1,124 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { User, Globe, Calculator, MessageCircle, Mic, Info } from 'lucide-react';
+import { User, Globe, MessageCircle, Mic, MapPin, Leaf, LogOut } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
-import { Input } from '../components/ui/input';
-import { Button } from '../components/ui/button';
 import { useT, type Lang } from '../../i18n';
 
-export function ProfileScreen(){
-  const nav=useNavigate();const{t,lang,setLang}=useT();
-  const[showCalc,setShowCalc]=useState(false);
-  const[qty,setQty]=useState('');const[tp,setTp]=useState('');const[tc,setTc]=useState('');const[stc,setStc]=useState('');const[sp,setSp]=useState('');const[mf,setMf]=useState('');const[np,setNp]=useState<number|null>(null);
-  const[ep,setEp]=useState('');
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
 
-  const calc=()=>{const q=parseFloat(qty)||0,p=parseFloat(ep)||0,tr=parseFloat(tc)||0,st=parseFloat(stc)||0,sl=parseFloat(sp)||0,fe=parseFloat(mf)||0;setNp(q*p-(tr+st+q*sl+fe));};
-  const langs:{code:Lang;label:string}[]=[{code:'en',label:'English'},{code:'hi',label:'हिंदी'},{code:'pa',label:'ਪੰਜਾਬੀ'},{code:'mr',label:'मराठी'}];
+export function ProfileScreen() {
+  const nav = useNavigate();
+  const { t, lang, setLang } = useT();
+  const [user, setUser] = useState<any>(null);
 
-  return(<div className="min-h-screen bg-[#fafaf8] pb-20 max-w-md mx-auto">
-    <div className="bg-gradient-to-br from-[#2d6a3e] to-[#16a34a] px-6 py-8 rounded-b-3xl">
-      <div className="flex items-center gap-4 mb-6"><div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center"><User className="w-10 h-10 text-white"/></div>
-        <div className="text-white"><h2 className="text-2xl mb-1">Ramesh Kumar</h2><p className="text-white/80">{t('profile.farmer')}</p><p className="text-white/80 text-sm">+91 98765 43210</p></div></div>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center"><p className="text-white text-2xl mb-1">₹12,450</p><p className="text-white/80 text-xs">{t('profile.totalSavings')}</p></div>
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center"><p className="text-white text-2xl mb-1">+₹320</p><p className="text-white/80 text-xs">{t('profile.avgGain')}</p></div>
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center"><p className="text-white text-2xl mb-1">87%</p><p className="text-white/80 text-xs">{t('profile.accuracy')}</p></div>
+  const langs: { code: Lang; label: string }[] = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिंदी' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+    { code: 'mr', label: 'मराठी' },
+  ];
+
+  useEffect(() => {
+    const token = localStorage.getItem('mandiq_token');
+    if (!token) return;
+    fetch(`${BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(setUser).catch(console.error);
+  }, []);
+
+const farmerDetails = user?.farmer_details ? 
+    (typeof user.farmer_details === 'string' ? JSON.parse(user.farmer_details) : user.farmer_details) : {};
+  const crops = farmerDetails?.crops || [];
+
+  function handleLogout() {
+    localStorage.removeItem('mandiq_token');
+    localStorage.removeItem('mandiq_user');
+    nav('/login');
+  }
+
+  return (
+    <div className="min-h-screen bg-[#fafaf8] pb-20 max-w-md mx-auto">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-[#2d6a3e] to-[#16a34a] px-6 py-8 rounded-b-3xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/40">
+              <img src="/kisan.png" alt="kisan" className="w-full h-full object-cover" />
+            </div>
+            <div className="text-white">
+              <h2 className="text-xl font-bold">{user?.name || 'Namaste'}</h2>
+              <p className="text-white/80 text-sm">{user?.role === 'farmer' ? '🌾 किसान' : '🏪 व्यापारी'}</p>
+              <p className="text-white/70 text-sm">+91 {user?.mobile_number || user?.mobile || ''}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="p-2 bg-white/20 rounded-xl">
+            <LogOut className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Location */}
+        {(farmerDetails?.state || farmerDetails?.district) && (
+          <div className="bg-white/15 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-white/80" />
+            <p className="text-white text-sm">{farmerDetails?.district}{farmerDetails?.district && farmerDetails?.state ? ', ' : ''}{farmerDetails?.state}</p>
+          </div>
+        )}
       </div>
+
+      <div className="px-6 py-4 space-y-4">
+
+        {/* Crops */}
+        {crops.length > 0 && (
+          <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Leaf className="w-5 h-5 text-[#2d6a3e]" />
+              <p className="font-semibold text-gray-800">मेरी फसलें</p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {crops.map((c: string) => (
+                <span key={c} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e8f5e9] rounded-xl text-sm text-[#2d6a3e] font-medium">
+                  {CROP_ICONS[c] || '🌱'} {c}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Language */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <Globe className="w-5 h-5 text-[#2d6a3e]" />
+            <p className="font-semibold text-gray-800">{t('profile.language')}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {langs.map(l => (
+              <button key={l.code} onClick={() => setLang(l.code)}
+                className={`py-2.5 px-3 rounded-xl text-sm border-2 transition-all font-medium ${lang === l.code ? 'bg-[#2d6a3e] border-[#2d6a3e] text-white' : 'border-gray-100 text-gray-600'}`}>
+                {l.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button className="bg-gradient-to-br from-[#fff7ed] to-white rounded-2xl p-5 border border-[#f97316]/20 flex flex-col items-start gap-3">
+            <div className="w-11 h-11 bg-[#f97316] rounded-xl flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-sm font-medium text-gray-800">{t('profile.support')}</p>
+          </button>
+          <button className="bg-gradient-to-br from-[#fff7ed] to-white rounded-2xl p-5 border border-[#f97316]/20 flex flex-col items-start gap-3">
+            <div className="w-11 h-11 bg-[#f97316] rounded-xl flex items-center justify-center">
+              <Mic className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-sm font-medium text-gray-800">{t('profile.voice')}</p>
+          </button>
+        </div>
+
+      </div>
+      <BottomNav />
     </div>
-    <div className="px-6 py-6 space-y-4">
-      {/* Language */}
-      <div className="bg-white rounded-3xl p-6 border border-border">
-        <div className="flex items-center gap-3 mb-4"><Globe className="w-5 h-5 text-[#2d6a3e]"/><h3>{t('profile.language')}</h3></div>
-        <div className="grid grid-cols-2 gap-2">{langs.map(l=><button key={l.code} onClick={()=>setLang(l.code)}
-          className={`py-2 px-3 rounded-xl text-sm border-2 transition-all ${lang===l.code?'bg-[#2d6a3e] border-[#2d6a3e] text-white':'border-border'}`}>{l.label}</button>)}</div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={()=>setShowCalc(!showCalc)} className="bg-gradient-to-br from-[#e8f5e9] to-white rounded-2xl p-6 border border-[#2d6a3e]/20 flex flex-col items-start gap-3">
-          <div className="w-12 h-12 bg-[#2d6a3e] rounded-xl flex items-center justify-center"><Calculator className="w-6 h-6 text-white"/></div>
-          <p className="text-sm">{t('profile.incomeCalc')}</p></button>
-        <button className="bg-gradient-to-br from-[#fff7ed] to-white rounded-2xl p-6 border border-[#f97316]/20 flex flex-col items-start gap-3">
-          <div className="w-12 h-12 bg-[#f97316] rounded-xl flex items-center justify-center"><MessageCircle className="w-6 h-6 text-white"/></div>
-          <p className="text-sm">{t('profile.support')}</p></button>
-        <button className="bg-gradient-to-br from-[#fff7ed] to-white rounded-2xl p-6 border border-[#f97316]/20 flex flex-col items-start gap-3">
-          <div className="w-12 h-12 bg-[#f97316] rounded-xl flex items-center justify-center"><Mic className="w-6 h-6 text-white"/></div>
-          <p className="text-sm">{t('profile.voice')}</p></button>
-        <button onClick={()=>nav('/mandi-info')} className="bg-gradient-to-br from-[#e8f5e9] to-white rounded-2xl p-6 border border-[#2d6a3e]/20 flex flex-col items-start gap-3">
-          <div className="w-12 h-12 bg-[#2d6a3e] rounded-xl flex items-center justify-center"><Info className="w-6 h-6 text-white"/></div>
-          <p className="text-sm">{t('profile.insights')}</p></button>
-      </div>
-
-      {showCalc&&<div className="bg-white rounded-3xl p-6 border-2 border-[#2d6a3e]">
-        <div className="flex items-center gap-3 mb-6"><Calculator className="w-6 h-6 text-[#2d6a3e]"/><h3>{t('profile.advCalc')}</h3></div>
-        <div className="space-y-4">
-          {[[qty,setQty,t('profile.quantity')],[ep,setEp,t('profile.expPrice')],[tc,setTc,t('profile.transport')],[stc,setStc,t('profile.storage')],[sp,setSp,t('profile.spoilage')],[mf,setMf,t('profile.mandiFees')]].map(([v,fn,l],i)=>
-            <div key={i}><label className="text-sm text-muted-foreground mb-2 block">{l as string}</label><Input type="number" value={v as string} onChange={e=>(fn as any)(e.target.value)} className="rounded-xl"/></div>)}
-          <Button onClick={calc} className="w-full bg-[#2d6a3e] hover:bg-[#1b4228] rounded-xl">{t('profile.calcBtn')}</Button>
-          {np!==null&&<div className="bg-gradient-to-br from-[#e8f5e9] to-white rounded-2xl p-6 border border-[#2d6a3e]/20">
-            <p className="text-sm text-muted-foreground mb-2">{t('profile.estProfit')}</p>
-            <p className={`text-3xl ${np>=0?'text-[#16a34a]':'text-red-600'}`}>{np>=0?'+':''}₹{Math.round(np).toLocaleString()}</p></div>}
-        </div></div>}
-    </div>
-    <BottomNav/>
-  </div>);
+  );
 }

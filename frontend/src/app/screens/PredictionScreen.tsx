@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Cloud, TrendingUp, AlertCircle, DollarSign, Loader2, Calendar, Target } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Cloud, TrendingUp, AlertCircle, Loader2, Calendar, Target } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Area, AreaChart, ReferenceLine, CartesianGrid } from 'recharts';
 import { Textarea } from '../components/ui/textarea';
@@ -16,11 +16,9 @@ const CROP_ICONS: Record<string, string> = {
 const ML: Record<string, string> = {
   'Azadpur APMC': 'Azadpur Mandi',
   'Keshopur APMC': 'Keshopur Mandi',
-  'Shahdara APMC': 'Shahdara Mandi',
 };
 
 function wd(d: string) { return new Date(d).toLocaleDateString('en-US', { weekday: 'short' }); }
-const SPD = 25;
 
 const CustomDot = (props: any) => {
   const { cx, cy, payload, bestDay } = props;
@@ -72,10 +70,6 @@ export function PredictionScreen() {
     if (Math.round(p.predicted_price) > bp) { bp = Math.round(p.predicted_price); bd = wd(p.date); bi = i; }
   });
 
-  const hd = bi >= 0 ? bi + 1 : 0;
-  const eg = Math.max(0, bp - tp);
-  const sc = hd * SPD;
-  const ng = eg - sc;
   const ac = preds.length ? Math.round(preds.reduce((s, p) => s + p.confidence, 0) / preds.length) : 0;
   const confColor = ac >= 80 ? '#16a34a' : ac >= 60 ? '#f97316' : '#ef4444';
 
@@ -215,35 +209,6 @@ export function PredictionScreen() {
           </div>
 
           {/* Cost Benefit */}
-          <div className="bg-gradient-to-br from-[#f0fdf4] to-white rounded-3xl p-5 border border-[#2d6a3e]/15 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-11 h-11 bg-[#2d6a3e] rounded-2xl flex items-center justify-center shadow-sm">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800">{t('pred.costBenefit')}</p>
-                <p className="text-xs text-gray-400">Storage vs gain analysis</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100">
-                <span className="text-sm text-gray-500">{t('pred.storageCost')} ({hd}d)</span>
-                <span className="text-red-500 font-semibold">−₹{sc}</span>
-              </div>
-              <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100">
-                <span className="text-sm text-gray-500">{t('pred.expGain')}</span>
-                <span className="text-green-600 font-semibold">+₹{eg}</span>
-              </div>
-              <div className="flex items-center justify-between bg-[#2d6a3e]/5 rounded-xl p-3.5 border border-[#2d6a3e]/15">
-                <span className="font-semibold text-gray-800">{t('pred.netGain')}</span>
-                <span className={`text-xl font-bold ${ng >= 0 ? 'text-[#2d6a3e]' : 'text-red-500'}`}>
-                  {ng >= 0 ? '+' : ''}₹{ng}
-                </span>
-              </div>
-            </div>
-            {ng <= 0 && <p className="text-xs text-gray-400 mt-3 text-center">{t('pred.noHold')}</p>}
-          </div>
-
           {/* Demand Level */}
           <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3 mb-4">

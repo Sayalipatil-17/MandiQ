@@ -1318,6 +1318,12 @@ date,market,arrival_qty_mt,modal_price_rs_quintal,month,season,producing_region,
 2026-07-16,Azadpur APMC,1094.1,2375.0,7,monsoon,nashik,37.5,29.8,0.0,54,29.0,23.1,0.7,81.0
 2026-07-17,Azadpur APMC,1270.5,2375.0,7,monsoon,nashik,37.3,31.2,0.3,55,29.1,23.1,0.1,81.0
 2026-07-18,Azadpur APMC,1082.7,2375.0,7,monsoon,nashik,36.6,30.9,0.0,54,29.7,22.9,0.1,81.0
+2026-07-20,Azadpur APMC,37.8,2438.0,7,monsoon,nashik,32.2,26.6,33.0,86,29.1,22.3,0.2,79.0
+2026-07-21,Azadpur APMC,1036.1,2438.0,7,monsoon,nashik,29.9,26.0,12.8,89,28.1,22.3,1.8,84.0
+2026-07-22,Azadpur APMC,561.3,2438.0,7,monsoon,nashik,32.0,25.8,6.9,83,28.3,22.4,1.2,83.0
+2026-07-23,Azadpur APMC,899.5,2438.0,7,monsoon,nashik,32.3,26.4,9.9,82,27.3,23.0,16.9,90.0
+2026-07-24,Azadpur APMC,1244.1,2438.0,7,monsoon,nashik,31.3,25.8,9.2,83,26.6,22.5,8.3,88.0
+2026-07-25,Azadpur APMC,1240.4,2438.0,7,monsoon,nashik,32.8,27.3,2.5,79,26.0,22.1,16.9,92.0
 2021-03-01,Keshopur APMC,120.24,3000.0,3,summer,nashik,27.4,13.9,0.0,47,30.8,17.2,0.0,46.0
 2021-03-02,Keshopur APMC,110.7,3000.0,3,summer,nashik,27.6,14.4,0.0,42,31.4,17.1,0.0,46.0
 2021-03-04,Keshopur APMC,48.07,2800.0,3,summer,nashik,31.0,15.1,0.0,49,31.7,17.3,0.0,44.0
@@ -2401,6 +2407,11 @@ date,market,arrival_qty_mt,modal_price_rs_quintal,month,season,producing_region,
 2026-07-16,Keshopur APMC,61.98,2300.0,7,monsoon,nashik,37.5,29.8,0.0,54,29.0,23.1,0.7,81.0
 2026-07-17,Keshopur APMC,144.01,2450.0,7,monsoon,nashik,37.3,31.2,0.3,55,29.1,23.1,0.1,81.0
 2026-07-18,Keshopur APMC,113.03,2400.0,7,monsoon,nashik,36.6,30.9,0.0,54,29.7,22.9,0.1,81.0
+2026-07-19,Keshopur APMC,146.52,2550.0,7,monsoon,nashik,37.1,29.9,2.8,62,29.4,22.8,0.0,79.0
+2026-07-20,Keshopur APMC,74.46,2400.0,7,monsoon,nashik,32.2,26.6,33.0,86,29.1,22.3,0.2,79.0
+2026-07-21,Keshopur APMC,89.14,2400.0,7,monsoon,nashik,29.9,26.0,12.8,89,28.1,22.3,1.8,84.0
+2026-07-24,Keshopur APMC,101.95,2400.0,7,monsoon,nashik,31.3,25.8,9.2,83,26.6,22.5,8.3,88.0
+2026-07-25,Keshopur APMC,105.28,2450.0,7,monsoon,nashik,32.8,27.3,2.5,79,26.0,22.1,16.9,92.0
 2021-01-01,Shahdara APMC,134.95,2300.0,1,winter,nashik,17.9,3.2,0.0,78,32.2,27.2,1.5,78.0
 2021-01-02,Shahdara APMC,106.2,2500.0,1,winter,nashik,17.9,9.8,2.7,75,32.2,27.2,1.5,78.0
 2021-01-03,Shahdara APMC,127.4,2500.0,1,winter,nashik,20.8,12.1,12.2,84,20.2,5.0,0.0,69.0

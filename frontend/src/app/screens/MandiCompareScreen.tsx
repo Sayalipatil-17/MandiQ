@@ -10,7 +10,6 @@ const CROP_HINDI: Record<string, string> = { Tomato: 'टमाटर', Potato: 
 const MM = [
   { value: 'Azadpur APMC', name: 'आज़ादपुर मंडी', emoji: '🏪', transportCost: 120 },
   { value: 'Keshopur APMC', name: 'केशोपुर मंडी', emoji: '🏬', transportCost: 180 },
-  { value: 'Shahdara APMC', name: 'शाहदरा मंडी', emoji: '🏢', transportCost: 250 },
 ];
 
 export function MandiCompareScreen() {

@@ -14,7 +14,6 @@ const CROPS = [
 const MARKETS = [
   { value: 'Azadpur APMC', label: 'Azadpur Mandi', emoji: '🏪' },
   { value: 'Keshopur APMC', label: 'Keshopur Mandi', emoji: '🏬' },
-  { value: 'Shahdara APMC', label: 'Shahdara Mandi', emoji: '🏢' },
 ];
 
 export function MandiInfoScreen() {

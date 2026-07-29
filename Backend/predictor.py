@@ -91,7 +91,9 @@ class MandiPredictor:
         w = bundle.get("weights", {"xgb":0.25,"lgb":0.30,"rf":0.25,"et":0.20})
 
         hist_df = _records_to_df(historical_data)
-        last_date = hist_df["date"].max()
+        from datetime import date
+        today = pd.Timestamp(date.today())
+        last_date = max(hist_df["date"].max(), today - pd.Timedelta(days=1))
         working_df = hist_df.copy()
         predictions = []
 
