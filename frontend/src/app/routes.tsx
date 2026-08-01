@@ -7,6 +7,7 @@ import { PredictionScreen } from "./screens/PredictionScreen";
 import { MandiCompareScreen } from "./screens/MandiCompareScreen";
 import { MandiInfoScreen } from "./screens/MandiInfoScreen";
 import { AlertsScreen } from "./screens/AlertsScreen";
+import { PastTrendScreen } from "./screens/PastTrendScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { UserTypeScreen } from "./screens/onboarding/UserTypeScreen";
 import { NameScreen } from "./screens/onboarding/NameScreen";
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
   { path: "/compare", Component: MandiCompareScreen },
   { path: "/mandi-info", Component: MandiInfoScreen },
   { path: "/alerts", Component: AlertsScreen },
+  { path: "/past-trend", Component: PastTrendScreen },
   { path: "/profile", Component: ProfileScreen },
   { path: "/onboarding/user-type", Component: UserTypeScreen },
   { path: "/onboarding/name", Component: NameScreen },

@@ -11,7 +11,6 @@ export function LoginScreen() {
   const [step, setStep] = useState<'phone'|'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,7 +24,6 @@ export function LoginScreen() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail);
-      setDevOtp(data.testing_otp || '');
       setStep('otp');
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
@@ -83,7 +81,6 @@ export function LoginScreen() {
           <div>
             <h2 className="text-2xl font-bold text-[#1b4228]">OTP डालें</h2>
             <p className="text-gray-500 mt-1">+91 {phone} पर भेजा गया</p>
-            {devOtp && <p className="text-[#2d6a3e] text-sm mt-1 font-medium">Dev OTP: {devOtp}</p>}
           </div>
           <input type="number" placeholder="6 अंकों का OTP" value={otp}
             onChange={e => setOtp(e.target.value.slice(0,6))}

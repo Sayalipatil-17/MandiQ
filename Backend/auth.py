@@ -62,14 +62,61 @@ def get_current_user(user_id: int = Depends(get_current_user_id)) -> Dict[str, A
         raise HTTPException(status_code=401, detail="User session not found")
     return user
 
+def _get_api_key() -> str:
+    return os.environ.get("FAST2SMS_API_KEY", "")
+
 def send_otp(mobile_number: str, otp: str) -> bool:
-    """
-    Modular OTP sending function.
-    Currently prints OTP to console for development mode.
-    Can be easily integrated with real SMS/WhatsApp API here.
-    """
-    print(f"\n========================================")
-    print(f" OTP SENT TO +91 {mobile_number}: {otp}")
-    print(f"========================================\n")
-    log.info(f"OTP {otp} sent to {mobile_number}")
-    return True
+    """Send OTP via 2Factor.in API."""
+    import requests
+    api_key = os.environ.get("TWOFACTOR_API_KEY", "")
+    if not api_key:
+        print(f"\n========================================")
+        print(f" OTP for +91 {mobile_number}: {otp}")
+        print(f" [2Factor key not set — console fallback]")
+        print(f"========================================\n")
+        return False
+    try:
+        url = f"https://2factor.in/API/V1/{api_key}/SMS/{mobile_number}/{otp}/MandiQ_OTP"
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        if data.get("Status") == "Success":
+            log.info(f"OTP SMS sent to {mobile_number} via 2Factor")
+            return True
+        log.warning(f"2Factor OTP error: {data}")
+        print(f"\n OTP for +91 {mobile_number}: {otp} [SMS failed: {data}]\n")
+        return False
+    except Exception as e:
+        log.error(f"OTP SMS failed: {e}")
+        print(f"\n OTP for +91 {mobile_number}: {otp} [Exception: {e}]\n")
+        return False
+
+
+def send_sms(mobile_number: str, message: str) -> bool:
+    """Send general SMS via Fast2SMS Quick SMS route (uses credits)."""
+    import requests
+    api_key = _get_api_key()
+    if not api_key or api_key == "your_fast2sms_api_key_here":
+        print(f"\n[SMS - NO API KEY] To {mobile_number}: {message}\n")
+        return False
+    try:
+        resp = requests.post(
+            "https://www.fast2sms.com/dev/bulkV2",
+            headers={"authorization": api_key, "Content-Type": "application/json"},
+            json={
+                "route": "q",
+                "message": message,
+                "language": "english",
+                "flash": 0,
+                "numbers": mobile_number,
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        if data.get("return"):
+            log.info(f"SMS sent to {mobile_number}")
+            return True
+        log.warning(f"Fast2SMS error: {data}")
+        return False
+    except Exception as e:
+        log.error(f"SMS send failed: {e}")
+        return False

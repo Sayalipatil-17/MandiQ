@@ -77,7 +77,20 @@ class MandiDB:
                     farmer_details  TEXT,
                     created_at      TEXT    DEFAULT (datetime('now'))
                 );
-                
+
+                CREATE TABLE IF NOT EXISTS price_alerts (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id         INTEGER NOT NULL,
+                    mobile          TEXT    NOT NULL,
+                    crop            TEXT    NOT NULL,
+                    market          TEXT    NOT NULL DEFAULT 'Azadpur APMC',
+                    target_price    REAL    NOT NULL,
+                    direction       TEXT    NOT NULL DEFAULT 'above',
+                    triggered       INTEGER NOT NULL DEFAULT 0,
+                    triggered_at    TEXT,
+                    created_at      TEXT    DEFAULT (datetime('now')),
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
             """)
         log.info(f"DB ready: {self.db_path}")
     def get_or_create_user(self, mobile: str, role: str = 'farmer') -> dict:
@@ -302,8 +315,43 @@ class MandiDB:
         import json
         with self._conn() as con:
             con.execute("""
-                UPDATE users 
+                UPDATE users
                 SET name = ?, role = ?, farmer_details = ?
                 WHERE id = ?
             """, (name, user_type, json.dumps(farmer_details), user_id))
+
+    # ─── Price Alerts ─────────────────────────────────────────────────────────
+    def create_alert(self, user_id: int, mobile: str, crop: str, market: str, target_price: float, direction: str = "above") -> int:
+        with self._conn() as con:
+            cur = con.execute(
+                "INSERT INTO price_alerts (user_id, mobile, crop, market, target_price, direction) VALUES (?,?,?,?,?,?)",
+                (user_id, mobile, crop, market, target_price, direction)
+            )
+            return cur.lastrowid
+
+    def get_alerts(self, user_id: int) -> List[Dict]:
+        with self._conn() as con:
+            rows = con.execute(
+                "SELECT * FROM price_alerts WHERE user_id = ? AND triggered = 0 ORDER BY created_at DESC",
+                (user_id,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def delete_alert(self, alert_id: int, user_id: int):
+        with self._conn() as con:
+            con.execute("DELETE FROM price_alerts WHERE id = ? AND user_id = ?", (alert_id, user_id))
+
+    def get_all_active_alerts(self) -> List[Dict]:
+        with self._conn() as con:
+            rows = con.execute(
+                "SELECT * FROM price_alerts WHERE triggered = 0"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def mark_alert_triggered(self, alert_id: int):
+        with self._conn() as con:
+            con.execute(
+                "UPDATE price_alerts SET triggered = 1, triggered_at = datetime('now') WHERE id = ?",
+                (alert_id,)
+            )
             

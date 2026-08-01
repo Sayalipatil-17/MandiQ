@@ -445,18 +445,32 @@ export function HomeScreen() {
           {/* CHART TOGGLE */}
           <ChartSection forecastOnly={forecastOnly} />
 
-          {/* MANDI JANKARI - flat horizontal strip */}
-          <button onClick={() => navigate('/mandi-info')}
-            className="w-full bg-[#fff7ed] rounded-2xl px-4 py-3.5 border border-[#f97316]/20 flex items-center gap-3 hover:border-[#f97316]/50 hover:shadow-sm transition-all active:scale-95 mb-2">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Building2 className="w-5 h-5 text-[#f97316]" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-800">मंडी जानकारी</p>
-              <p className="text-xs text-gray-400">सभी फसलों के भाव देखें</p>
-            </div>
-            <span className="text-xs text-[#f97316] font-semibold">देखें →</span>
-          </button>
+          {/* MANDI JANKARI + PAST TREND - side by side */}
+          <div className="grid grid-cols-2 gap-3 mb-2">
+            <button onClick={() => navigate('/mandi-info')}
+              className="bg-[#fff7ed] rounded-2xl p-4 border border-[#f97316]/20 flex flex-col items-start gap-2 hover:border-[#f97316]/50 hover:shadow-sm transition-all active:scale-95">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                <Building2 className="w-5 h-5 text-[#f97316]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">मंडी जानकारी</p>
+                <p className="text-xs text-gray-400">सभी फसलों के भाव</p>
+              </div>
+              <span className="text-xs text-[#f97316] font-semibold">देखें →</span>
+            </button>
+
+            <button onClick={() => navigate('/past-trend')}
+              className="bg-[#f0f7f1] rounded-2xl p-4 border border-[#2d6a3e]/15 flex flex-col items-start gap-2 hover:border-[#2d6a3e]/40 hover:shadow-sm transition-all active:scale-95">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                <TrendingUp className="w-5 h-5 text-[#2d6a3e]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">पिछला ट्रेंड</p>
+                <p className="text-xs text-gray-400">भाव का इतिहास देखें</p>
+              </div>
+              <span className="text-xs text-[#2d6a3e] font-semibold">देखें →</span>
+            </button>
+          </div>
         </div>
       )}
 

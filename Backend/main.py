@@ -108,7 +108,7 @@ def api_send_otp(req: SendOtpRequest):
     otp = str(random.randint(100000, 999999))
     otp_store[req.mobile] = otp
     send_otp(req.mobile, otp)
-    return {"status": "sent", "testing_otp": otp}
+    return {"status": "sent"}
 
 @app.post("/api/auth/verify-otp")
 def api_verify_otp(req: VerifyOtpRequest):
@@ -335,7 +335,7 @@ def api_send_otp(req: SendOtpRequest):
     otp = str(random.randint(100000, 999999))
     db.save_otp(req.mobile, otp)
     _send_otp(req.mobile, otp)
-    return {"status": "sent", "testing_otp": otp}
+    return {"status": "sent"}
 
 @app.post("/api/auth/verify-otp")
 def api_verify_otp(req: VerifyOtpRequest):
@@ -381,6 +381,83 @@ def api_me(authorization: Optional[str] = Header(None)):
     if not user:
         raise HTTPException(404, "User not found")
     return dict(user)
-    
+
+
+# ─── Price Alert Endpoints ────────────────────────────────────────────────────
+
+class CreateAlertRequest(BaseModel):
+    crop: str
+    market: str = "Azadpur APMC"
+    target_price: float
+    direction: str = "above"  # "above" or "below"
+
+def _get_user_from_token(authorization: Optional[str]):
+    if not authorization:
+        raise HTTPException(401, "Token missing")
+    from auth import decode_access_token
+    user_id = decode_access_token(authorization.split(" ")[-1])
+    if not user_id:
+        raise HTTPException(401, "Invalid token")
+    user = db.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    return user
+
+@app.post("/api/alerts")
+def api_create_alert(req: CreateAlertRequest, authorization: Optional[str] = Header(None)):
+    user = _get_user_from_token(authorization)
+    mobile = user.get("mobile") or user.get("mobile_number", "")
+    alert_id = db.create_alert(user["id"], mobile, req.crop, req.market, req.target_price, req.direction)
+    return {"status": "created", "alert_id": alert_id}
+
+@app.get("/api/alerts")
+def api_get_alerts(authorization: Optional[str] = Header(None)):
+    user = _get_user_from_token(authorization)
+    return db.get_alerts(user["id"])
+
+@app.delete("/api/alerts/{alert_id}")
+def api_delete_alert(alert_id: int, authorization: Optional[str] = Header(None)):
+    user = _get_user_from_token(authorization)
+    db.delete_alert(alert_id, user["id"])
+    return {"status": "deleted"}
+
+@app.post("/api/alerts/check")
+def api_check_alerts(background_tasks: BackgroundTasks, authorization: Optional[str] = Header(None)):
+    """Manually trigger alert check — can also be called by a cron job."""
+    background_tasks.add_task(_check_all_alerts)
+    return {"status": "checking"}
+
+def _check_all_alerts():
+    """Check all active alerts against today's latest price and send SMS if triggered."""
+    from auth import send_sms
+    alerts = db.get_all_active_alerts()
+    if not alerts:
+        return
+    # Group by crop+market to avoid redundant DB queries
+    from itertools import groupby
+    checked: dict = {}
+    for alert in alerts:
+        key = f"{alert['crop']}|{alert['market']}"
+        if key not in checked:
+            records = db.get_data(alert["crop"], alert["market"])
+            checked[key] = records[-1]["modal_price"] if records else None
+        current_price = checked[key]
+        if current_price is None:
+            continue
+        target = alert["target_price"]
+        direction = alert.get("direction", "above")
+        triggered = (direction == "above" and current_price >= target) or \
+                    (direction == "below" and current_price <= target)
+        if triggered:
+            crop_hindi = {"Tomato": "टमाटर", "Potato": "आलू", "Onion": "प्याज", "Spinach": "पालक"}.get(alert["crop"], alert["crop"])
+            msg = (
+                f"MandiQ Alert: {crop_hindi} ka bhav {alert['market']} mein "
+                f"Rs {int(current_price)}/quintal ho gaya hai. "
+                f"Aapka target Rs {int(target)} tha. "
+                f"Bechne ka sahi samay! - MandiQ"
+            )
+            send_sms(alert["mobile"], msg)
+            db.mark_alert_triggered(alert["id"])
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
