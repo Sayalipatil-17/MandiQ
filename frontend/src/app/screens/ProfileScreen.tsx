@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { User, Globe, MessageCircle, Mic, MapPin, Leaf, LogOut } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
-import { useT, type Lang } from '../../i18n';
+import { useT, type Lang, cropName } from '../../i18n';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
@@ -48,7 +48,7 @@ const farmerDetails = user?.farmer_details ?
             </div>
             <div className="text-white">
               <h2 className="text-xl font-bold">{user?.name || 'Namaste'}</h2>
-              <p className="text-white/80 text-sm">{user?.role === 'farmer' ? '🌾 किसान' : '🏪 व्यापारी'}</p>
+              <p className="text-white/80 text-sm">{user?.role === 'farmer' ? `🌾 ${t('profile.farmer')}` : `🏪 ${t('profile.trader')}`}</p>
               <p className="text-white/70 text-sm">+91 {user?.mobile_number || user?.mobile || ''}</p>
             </div>
           </div>
@@ -73,12 +73,12 @@ const farmerDetails = user?.farmer_details ?
           <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Leaf className="w-5 h-5 text-[#2d6a3e]" />
-              <p className="font-semibold text-gray-800">मेरी फसलें</p>
+              <p className="font-semibold text-gray-800">{t('profile.myCrops')}</p>
             </div>
             <div className="flex gap-2 flex-wrap">
               {crops.map((c: string) => (
                 <span key={c} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e8f5e9] rounded-xl text-sm text-[#2d6a3e] font-medium">
-                  {CROP_ICONS[c] || '🌱'} {c}
+                  {CROP_ICONS[c] || '🌱'} {cropName(c, t)}
                 </span>
               ))}
             </div>

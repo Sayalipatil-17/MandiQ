@@ -3,19 +3,19 @@ import { useNavigate } from 'react-router';
 import { ArrowLeft, Star, TrendingUp, TrendingDown, Minus, Loader2, Navigation } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { mandiApi } from '../../mandiq-api';
+import { useT, cropName } from '../../i18n';
 
 const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
-const CROP_HINDI: Record<string, string> = { Tomato: 'टमाटर', Potato: 'आलू', Onion: 'प्याज', Spinach: 'पालक' };
 
 const MM = [
-  { value: 'Azadpur APMC', name: 'आज़ादपुर मंडी', emoji: '🏪', transportCost: 120 },
-  { value: 'Keshopur APMC', name: 'केशोपुर मंडी', emoji: '🏬', transportCost: 180 },
+  { value: 'Azadpur APMC', emoji: '🏪', transportCost: 120 },
+  { value: 'Keshopur APMC', emoji: '🏬', transportCost: 180 },
 ];
 
 export function MandiCompareScreen() {
   const nav = useNavigate();
+  const { t } = useT();
   const crop = localStorage.getItem('selectedCrop') || 'Tomato';
-  const cropHindi = CROP_HINDI[crop] || crop;
   const [ld, setLd] = useState(true);
   const [mandis, setMandis] = useState<any[]>([]);
 
@@ -53,11 +53,11 @@ export function MandiCompareScreen() {
           <button onClick={() => nav('/home')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
-          <h2 className="text-lg font-semibold text-white">मंडी तुलना</h2>
+          <h2 className="text-lg font-semibold text-white">{t('cmp.title')}</h2>
         </div>
         <div className="flex items-center gap-2 bg-white/20 rounded-xl px-3 py-2 w-fit">
           <span className="text-lg">{CROP_ICONS[crop]}</span>
-          <p className="text-white font-semibold text-sm">{cropHindi} के लिए तीनों मंडियों की तुलना</p>
+          <p className="text-white font-semibold text-sm">{cropName(crop, t)}</p>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ export function MandiCompareScreen() {
         {ld && (
           <div className="flex items-center gap-2 text-[#2d6a3e] py-8 justify-center">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">कीमतें लोड हो रही हैं…</span>
+            <span className="text-sm">{t('cmp.loading')}</span>
           </div>
         )}
 
@@ -73,9 +73,9 @@ export function MandiCompareScreen() {
           <div className="bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-3xl p-5 text-white shadow-md">
             <div className="flex items-center gap-2 mb-2">
               <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
-              <p className="font-semibold text-sm">यहाँ बेचना सबसे फायदेमंद</p>
+              <p className="font-semibold text-sm">{t('cmp.bestSell')}</p>
             </div>
-            <p className="text-2xl font-bold">{bestMandi.emoji} {bestMandi.name}</p>
+            <p className="text-2xl font-bold">{bestMandi.emoji} {bestMandi.value}</p>
           </div>
         )}
 
@@ -86,14 +86,12 @@ export function MandiCompareScreen() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl">{m.emoji}</div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-gray-800">{m.name}</p>
-                      {m.isBest && <span className="px-2 py-0.5 bg-[#f97316] text-white text-xs rounded-full flex items-center gap-1"><Star className="w-3 h-3 fill-white" /> Best</span>}
-                    </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-gray-800">{m.value}</p>
+                    {m.isBest && <span className="px-2 py-0.5 bg-[#f97316] text-white text-xs rounded-full flex items-center gap-1"><Star className="w-3 h-3 fill-white" /> Best</span>}
                   </div>
                 </div>
-                <button onClick={() => window.open(`https://maps.google.com/?q=${m.name}+Delhi`, '_blank')}
+                <button onClick={() => window.open(`https://maps.google.com/?q=${m.value}+Delhi`, '_blank')}
                   className="p-2.5 rounded-xl border border-[#2d6a3e] text-[#2d6a3e]">
                   <Navigation className="w-4 h-4" />
                 </button>
@@ -102,17 +100,17 @@ export function MandiCompareScreen() {
               {m.price > 0 ? (
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">आज की कीमत</p>
+                    <p className="text-xs text-gray-400 mb-1">{t('cmp.todayPrice')}</p>
                     <p className="text-3xl font-bold text-[#1b4228]">₹{m.price.toLocaleString()}</p>
-                    <p className="text-xs text-gray-400">प्रति क्विंटल</p>
+                    <p className="text-xs text-gray-400">{t('common.perQuintal')}</p>
                   </div>
                   <div className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-semibold ${up ? 'bg-green-50 text-green-700' : down ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500'}`}>
                     {up ? <TrendingUp className="w-4 h-4" /> : down ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-                    {up ? `कल से ₹${m.change} बढ़ी` : down ? `कल से ₹${Math.abs(m.change)} घटी` : 'कल जैसी कीमत'}
+                    {up ? `₹${m.change} ${t('cmp.increased')}` : down ? `₹${Math.abs(m.change)} ${t('cmp.decreased')}` : t('cmp.same')}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 text-center py-3">डेटा उपलब्ध नहीं</p>
+                <p className="text-sm text-gray-400 text-center py-3">{t('cmp.noData')}</p>
               )}
             </div>
           );

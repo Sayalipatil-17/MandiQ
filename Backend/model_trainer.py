@@ -22,7 +22,7 @@ Usage:
 import os, joblib, logging
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
 from sklearn.metrics import mean_absolute_error
@@ -51,6 +51,8 @@ RF_PARAMS  = dict(n_estimators=200, min_samples_leaf=1, max_features='sqrt',
                   random_state=42, n_jobs=-1)
 ET_PARAMS  = dict(n_estimators=150, min_samples_leaf=2,
                   random_state=42, n_jobs=-1)
+
+USE_WEATHER = False  # tested neutral on held-out data, kept off by default
 
 
 def mape_score(y_true, y_pred):
@@ -132,6 +134,9 @@ def build_features(df: pd.DataFrame, az_prices: Optional[pd.DataFrame] = None) -
 
     excl = {'modal_price','date','market','commodity','state','district',
             'cg','arrival_unit','price_unit','season_label','producing_region'}
+    if not USE_WEATHER:
+        excl.update(weather_cols)
+
     feat_cols = [c for c in d.columns if c not in excl
                  and d[c].dtype in [np.float64, np.int64, np.float32]]
 
@@ -139,6 +144,70 @@ def build_features(df: pd.DataFrame, az_prices: Optional[pd.DataFrame] = None) -
     X = d[feat_cols].fillna(0)
     y = d['modal_price'].astype(float)
     return X, y, feat_cols
+
+
+def make_ensemble_eval_predict_fn(df_full, commodity, market):
+    # Slice training portion (first 70%)
+    df_sorted = df_full.sort_values('date').drop_duplicates('date')
+    n = len(df_sorted)
+    split = int(n * 0.70)
+    df_train = df_sorted.iloc[:split]
+
+    if len(df_train) < 60:
+        return lambda c, m, hist: hist[-1]
+
+    X_tr, y_tr, feat_cols = build_features(df_train)
+    if len(X_tr) < 50:
+        return lambda c, m, hist: hist[-1]
+
+    # Fit the ensemble on training portion
+    import xgboost as xgb
+    import lightgbm as lgb
+    from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
+
+    xm = xgb.XGBRegressor(**XGB_PARAMS)
+    lm = lgb.LGBMRegressor(**LGB_PARAMS)
+    rm = RandomForestRegressor(**RF_PARAMS)
+    em = ExtraTreesRegressor(**ET_PARAMS)
+
+    xm.fit(X_tr, y_tr)
+    lm.fit(X_tr, y_tr)
+    rm.fit(X_tr, y_tr)
+    em.fit(X_tr, y_tr)
+
+    # Store group map to lookup dates during evaluation
+    groups = { (commodity.lower(), market.lower()): df_sorted.reset_index(drop=True) }
+
+    def ensemble_predict_fn(com, mkt, price_history):
+        g = groups.get((com.lower(), mkt.lower()))
+        if g is None:
+            return price_history[-1]
+        t = len(price_history) - 1
+        history_df = g.iloc[:t+1].copy()
+
+        try:
+            X_eval, _, _ = build_features(history_df)
+            if X_eval.empty:
+                return price_history[-1]
+
+            row = X_eval.iloc[[-1]]
+            for c in feat_cols:
+                if c not in row.columns:
+                    row = row.copy(); row[c] = 0.0
+            X_pred = row[feat_cols].fillna(0)
+
+            xp = xm.predict(X_pred)[0]
+            lp = lm.predict(X_pred)[0]
+            rp = rm.predict(X_pred)[0]
+            ep = em.predict(X_pred)[0]
+
+            pred = (W_XGB * xp + W_LGB * lp + W_RF * rp + W_ET * ep)
+            return float(pred)
+        except Exception:
+            pass
+        return price_history[-1]
+
+    return ensemble_predict_fn
 
 
 class BestModelTrainer:
@@ -180,6 +249,35 @@ class BestModelTrainer:
         df = df.dropna(subset=['date','modal_price'])
         df = df.sort_values('date').drop_duplicates(subset=['date']).reset_index(drop=True)
         return df
+
+    def train_reversion(self, db) -> Optional[Any]:
+        """Trains MandiQReversion on the first 70% of chronological price records (train portion)"""
+        from mandiq_reversion import MandiQReversion
+        records = db.get_all_price_records()
+        if not records:
+            log.warning("No records in DB to train reversion model.")
+            return None
+        df = pd.DataFrame(records)
+        df['date'] = pd.to_datetime(df['date'])
+
+        train_dfs = []
+        for (com, mkt), g in df.groupby(['commodity', 'market']):
+            g = g.sort_values('date').drop_duplicates('date')
+            n = len(g)
+            split = int(n * 0.70)
+            train_dfs.append(g.iloc[:split])
+
+        if not train_dfs:
+            return None
+
+        df_train = pd.concat(train_dfs, ignore_index=True)
+        reversion_model = MandiQReversion()
+        reversion_model.fit(df_train)
+
+        path = os.path.join(self.models_dir, "mandiq_reversion.json")
+        reversion_model.save(path)
+        log.info(f"Successfully trained and saved reversion model to {path}")
+        return reversion_model
 
     def train(self, records: List[Dict], commodity: str, market: str) -> Dict:
         """Train 4-model ensemble and save to disk"""
@@ -239,6 +337,64 @@ class BestModelTrainer:
         # ── Feature importance ──
         importance = pd.Series(xm_f.feature_importances_, index=feat_cols).sort_values(ascending=False)
 
+        # Ensure df has commodity and market columns for honest_eval
+        if 'commodity' not in df.columns:
+            df['commodity'] = commodity
+        if 'market' not in df.columns:
+            df['market'] = market
+
+        # ── Retrain reversion model weekly, not daily ──
+        reversion_path = os.path.join(self.models_dir, "mandiq_reversion.json")
+        import time
+        should_retrain = True
+        if os.path.exists(reversion_path):
+            mtime = os.path.getmtime(reversion_path)
+            if (time.time() - mtime) < 604800: # 7 days
+                should_retrain = False
+
+        from database import MandiDB
+        db_conn = MandiDB()
+
+        if should_retrain:
+            log.info("Triggering weekly retraining of reversion model...")
+            self.train_reversion(db_conn)
+        else:
+            log.info("Reversion model is up-to-date (trained less than 7 days ago). Skipping retraining.")
+
+        # ── Honest Metrics Evaluation ──
+        log.info("Running honest evaluation for reversion and ensemble...")
+        import honest_eval
+
+        # Reversion predict fn wrapper
+        from mandiq_reversion import MandiQReversion
+        rev_model = MandiQReversion()
+        if os.path.exists(reversion_path):
+            try:
+                rev_model.load(reversion_path)
+            except Exception as e:
+                log.error(f"Failed to load reversion model for evaluation: {e}")
+
+        def reversion_predict_fn(com, mkt, price_history):
+            res = rev_model.predict(com, mkt, price_history)
+            if "error" in res:
+                return price_history[-1]
+            return res["predicted_price"]
+
+        # Ensemble predict fn wrapper
+        ensemble_predict_fn = make_ensemble_eval_predict_fn(df, commodity, market)
+
+        try:
+            metrics_rev = honest_eval.evaluate(df, reversion_predict_fn, test_frac=0.30, label="reversion")
+        except Exception as e:
+            log.error(f"Honest eval for reversion failed: {e}")
+            metrics_rev = {}
+
+        try:
+            metrics_ens = honest_eval.evaluate(df, ensemble_predict_fn, test_frac=0.30, label="ensemble")
+        except Exception as e:
+            log.error(f"Honest eval for ensemble failed: {e}")
+            metrics_ens = {}
+
         # ── Save ──
         bundle = {
             'xgb': xm_f, 'lgb': lm_f, 'rf': rm_f, 'et': em_f,
@@ -251,6 +407,10 @@ class BestModelTrainer:
                 'holdout_mae': ho_mae,
                 'rows': len(X),
                 'features': len(feat_cols),
+                'honest_eval': {
+                    'reversion': metrics_rev,
+                    'ensemble': metrics_ens
+                }
             },
             'commodity': commodity,
             'market': market,

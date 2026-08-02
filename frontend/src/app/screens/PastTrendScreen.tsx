@@ -3,33 +3,32 @@ import { useNavigate } from 'react-router';
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, BarChart2, AlertCircle, Loader2 } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { mandiApi } from '../../mandiq-api';
+import { useT, cropName } from '../../i18n';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceLine
 } from 'recharts';
 
 const CROPS = [
-  { name: 'Tomato', hindi: 'टमाटर', emoji: '🍅' },
-  { name: 'Potato', hindi: 'आलू', emoji: '🥔' },
-  { name: 'Onion', hindi: 'प्याज', emoji: '🧅' },
-  { name: 'Spinach', hindi: 'पालक', emoji: '🌿' },
+  { name: 'Tomato', emoji: '🍅' },
+  { name: 'Potato', emoji: '🥔' },
+  { name: 'Onion', emoji: '🧅' },
+  { name: 'Spinach', emoji: '🌿' },
 ];
 
 const MARKETS = [
-  { value: 'Azadpur APMC', label: 'आज़ादपुर' },
-  { value: 'Keshopur APMC', label: 'केशोपुर' },
+  { value: 'Azadpur APMC', short: 'Azadpur' },
+  { value: 'Keshopur APMC', short: 'Keshopur' },
 ];
 
 const PERIODS = [
-  { label: '1 महीना', days: 30 },
-  { label: '3 महीने', days: 90 },
-  { label: '6 महीने', days: 180 },
+  { key: 'trend.period30', days: 30 },
+  { key: 'trend.period90', days: 90 },
 ];
-
-const DAYS = ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
 
 export function PastTrendScreen() {
   const nav = useNavigate();
+  const { t } = useT();
   const [crop, setCrop] = useState(localStorage.getItem('selectedCrop') || 'Tomato');
   const [market, setMarket] = useState(localStorage.getItem('selectedMarket') || 'Azadpur APMC');
   const [period, setPeriod] = useState(30);
@@ -37,9 +36,7 @@ export function PastTrendScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    load();
-  }, [crop, market, period]);
+  useEffect(() => { load(); }, [crop, market, period]);
 
   async function load() {
     setLoading(true);
@@ -55,7 +52,7 @@ export function PastTrendScreen() {
       );
       setHistory(h);
     } catch {
-      setError('डेटा लोड नहीं हो सका');
+      setError(t('common.dataError'));
     }
     setLoading(false);
   }
@@ -63,14 +60,11 @@ export function PastTrendScreen() {
   const cropObj = CROPS.find(c => c.name === crop)!;
   const marketObj = MARKETS.find(m => m.value === market)!;
 
-  // Chart data
   const chartData = history.map(h => ({
     date: new Date(h.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
     price: Math.round(h.modal_price),
-    arrival: Math.round(h.arrival_qty || 0),
   }));
 
-  // Stats
   const prices = history.map(h => h.modal_price);
   const avgPrice = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
   const minPrice = prices.length ? Math.round(Math.min(...prices)) : 0;
@@ -82,40 +76,11 @@ export function PastTrendScreen() {
   const overallChange = latestPrice - firstPrice;
   const changePct = firstPrice ? Math.round((overallChange / firstPrice) * 100) : 0;
 
-  // Volatility
-  const variance = prices.length > 1
-    ? prices.reduce((s, p) => s + (p - avgPrice) ** 2, 0) / prices.length
-    : 0;
-  const stdDev = Math.round(Math.sqrt(variance));
-  const volatility = avgPrice ? Math.round((stdDev / avgPrice) * 100) : 0;
-  const volatilityLabel = volatility < 5 ? 'स्थिर' : volatility < 15 ? 'सामान्य' : 'अस्थिर';
-  const volatilityColor = volatility < 5 ? 'text-green-600' : volatility < 15 ? 'text-yellow-600' : 'text-red-500';
-
-  // Best day of week to sell
-  const dayMap: Record<number, number[]> = {};
-  history.forEach(h => {
-    const day = new Date(h.date).getDay();
-    if (!dayMap[day]) dayMap[day] = [];
-    dayMap[day].push(h.modal_price);
-  });
-  const dayAvgs = Object.entries(dayMap).map(([d, ps]) => ({
-    day: parseInt(d),
-    avg: Math.round(ps.reduce((a, b) => a + b, 0) / ps.length),
-  }));
-  const bestDay = dayAvgs.length ? dayAvgs.reduce((a, b) => b.avg > a.avg ? b : a) : null;
-  const worstDay = dayAvgs.length ? dayAvgs.reduce((a, b) => b.avg < a.avg ? b : a) : null;
-
-  // Price trend last 7 days
   const last7 = history.slice(-7);
   const trend7 = last7.length > 1
-    ? last7[last7.length - 1].modal_price - last7[0].modal_price
-    : 0;
+    ? last7[last7.length - 1].modal_price - last7[0].modal_price : 0;
 
-  // Arrival trend
-  const arrivals = history.filter(h => h.arrival_qty).map(h => h.arrival_qty);
-  const avgArrival = arrivals.length ? Math.round(arrivals.reduce((a, b) => a + b, 0) / arrivals.length) : 0;
-
-  const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' }) : '';
+  const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
 
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-24 max-w-md mx-auto">
@@ -127,8 +92,8 @@ export function PastTrendScreen() {
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
           <div>
-            <h2 className="text-lg font-semibold text-white">पिछला ट्रेंड</h2>
-            <p className="text-white/70 text-xs">भाव का इतिहास और विश्लेषण</p>
+            <h2 className="text-lg font-semibold text-white">{t('trend.title')}</h2>
+            <p className="text-white/70 text-xs">{t('trend.subtitle')}</p>
           </div>
         </div>
 
@@ -138,7 +103,7 @@ export function PastTrendScreen() {
             <button key={c.name} onClick={() => { setCrop(c.name); localStorage.setItem('selectedCrop', c.name); }}
               className={`flex flex-col items-center py-2 rounded-xl border-2 transition-all ${crop === c.name ? 'bg-white border-white' : 'bg-white/15 border-white/20'}`}>
               <span className="text-lg">{c.emoji}</span>
-              <p className={`text-[10px] font-medium mt-0.5 ${crop === c.name ? 'text-[#2d6a3e]' : 'text-white'}`}>{c.hindi}</p>
+              <p className={`text-[10px] font-medium mt-0.5 ${crop === c.name ? 'text-[#2d6a3e]' : 'text-white'}`}>{cropName(c.name, t)}</p>
             </button>
           ))}
         </div>
@@ -148,7 +113,7 @@ export function PastTrendScreen() {
           {MARKETS.map(m => (
             <button key={m.value} onClick={() => setMarket(m.value)}
               className={`py-2 rounded-xl text-sm font-medium border-2 transition-all ${market === m.value ? 'bg-white text-[#2d6a3e] border-white' : 'bg-white/15 text-white border-white/20'}`}>
-              {m.label}
+              {m.short}
             </button>
           ))}
         </div>
@@ -161,7 +126,7 @@ export function PastTrendScreen() {
           {PERIODS.map(p => (
             <button key={p.days} onClick={() => setPeriod(p.days)}
               className={`flex-1 py-2 rounded-xl text-xs font-semibold border-2 transition-all ${period === p.days ? 'bg-[#2d6a3e] text-white border-[#2d6a3e]' : 'bg-white text-gray-500 border-gray-100'}`}>
-              {p.label}
+              {t(p.key)}
             </button>
           ))}
         </div>
@@ -184,11 +149,11 @@ export function PastTrendScreen() {
             {/* Overall change banner */}
             <div className={`rounded-2xl p-4 flex items-center justify-between ${overallChange >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
               <div>
-                <p className="text-xs text-gray-500">{period} दिन में बदलाव</p>
+                <p className="text-xs text-gray-500">{t('trend.overall')}</p>
                 <p className={`text-2xl font-bold ${overallChange >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                   {overallChange >= 0 ? '+' : ''}₹{overallChange} ({changePct}%)
                 </p>
-                <p className="text-xs text-gray-400">{fmtDate(history[0]?.date)} → आज</p>
+                <p className="text-xs text-gray-400">{fmtDate(history[0]?.date)} → {t('common.today')}</p>
               </div>
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${overallChange >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
                 {overallChange >= 0 ? <TrendingUp className="w-8 h-8 text-green-600" /> : <TrendingDown className="w-8 h-8 text-red-500" />}
@@ -199,8 +164,8 @@ export function PastTrendScreen() {
             <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className="w-5 h-5 text-[#2d6a3e]" />
-                <p className="font-semibold text-gray-800">भाव का ग्राफ</p>
-                <span className="ml-auto text-xs text-gray-400">{cropObj.emoji} {marketObj.label}</span>
+                <p className="font-semibold text-gray-800">{t('trend.priceHistory')}</p>
+                <span className="ml-auto text-xs text-gray-400">{cropObj?.emoji} {marketObj?.short}</span>
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={chartData}>
@@ -213,31 +178,29 @@ export function PastTrendScreen() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 9 }} interval={Math.floor(chartData.length / 5)} />
                   <YAxis tick={{ fontSize: 9 }} width={45} tickFormatter={v => `₹${v}`} />
-                  <Tooltip
-                    formatter={(v: any) => [`₹${v}`, 'भाव']}
-                    contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #e5e7eb' }}
-                  />
-                  <ReferenceLine y={avgPrice} stroke="#f97316" strokeDasharray="4 4" label={{ value: 'औसत', fontSize: 9, fill: '#f97316' }} />
+                  <Tooltip formatter={(v: any) => [`₹${v}`, t('trend.priceHistory')]}
+                    contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #e5e7eb' }} />
+                  <ReferenceLine y={avgPrice} stroke="#f97316" strokeDasharray="4 4"
+                    label={{ value: `${t('common.avg')} ₹${avgPrice}`, fontSize: 9, fill: '#f97316' }} />
                   <Area type="monotone" dataKey="price" stroke="#2d6a3e" strokeWidth={2} fill="url(#priceGrad)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="text-xs text-gray-400 text-center mt-1">नारंगी रेखा = औसत भाव ₹{avgPrice}</p>
             </div>
 
             {/* Stats grid */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
-                <p className="text-xs text-gray-400 mb-1">औसत</p>
+                <p className="text-xs text-gray-400 mb-1">{t('common.avg')}</p>
                 <p className="text-lg font-bold text-[#1b4228]">₹{avgPrice}</p>
-                <p className="text-[10px] text-gray-400">प्रति क्विंटल</p>
+                <p className="text-[10px] text-gray-400">{t('common.perQuintal')}</p>
               </div>
               <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-100 text-center">
-                <p className="text-xs text-gray-400 mb-1">न्यूनतम</p>
+                <p className="text-xs text-gray-400 mb-1">{t('common.min')}</p>
                 <p className="text-lg font-bold text-red-600">₹{minPrice}</p>
                 <p className="text-[10px] text-gray-400">{fmtDate(minDate)}</p>
               </div>
               <div className="bg-green-50 rounded-2xl p-4 shadow-sm border border-green-100 text-center">
-                <p className="text-xs text-gray-400 mb-1">अधिकतम</p>
+                <p className="text-xs text-gray-400 mb-1">{t('common.max')}</p>
                 <p className="text-lg font-bold text-green-600">₹{maxPrice}</p>
                 <p className="text-[10px] text-gray-400">{fmtDate(maxDate)}</p>
               </div>
@@ -245,7 +208,7 @@ export function PastTrendScreen() {
 
             {/* Last 7 days trend */}
             <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-              <p className="font-semibold text-gray-800 mb-3">पिछले 7 दिन का ट्रेंड</p>
+              <p className="font-semibold text-gray-800 mb-3">{t('trend.recent7')}</p>
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${trend7 > 0 ? 'bg-green-50' : trend7 < 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
                   {trend7 > 0 ? <TrendingUp className="w-6 h-6 text-green-600" /> : trend7 < 0 ? <TrendingDown className="w-6 h-6 text-red-500" /> : <Minus className="w-6 h-6 text-gray-400" />}
@@ -254,20 +217,16 @@ export function PastTrendScreen() {
                   <p className={`text-lg font-bold ${trend7 > 0 ? 'text-green-600' : trend7 < 0 ? 'text-red-500' : 'text-gray-500'}`}>
                     {trend7 > 0 ? '+' : ''}₹{trend7}
                   </p>
-                  <p className="text-xs text-gray-400">
-                    {trend7 > 0 ? '7 दिन में भाव बढ़ा' : trend7 < 0 ? '7 दिन में भाव घटा' : '7 दिन में कोई बदलाव नहीं'}
-                  </p>
                 </div>
               </div>
             </div>
-
           </>
         )}
 
         {!loading && !error && history.length === 0 && (
           <div className="bg-white rounded-3xl p-8 text-center shadow-sm border border-gray-100">
             <p className="text-4xl mb-3">📊</p>
-            <p className="text-gray-500 text-sm">इस अवधि का डेटा उपलब्ध नहीं है</p>
+            <p className="text-gray-500 text-sm">{t('trend.noData')}</p>
           </div>
         )}
       </div>

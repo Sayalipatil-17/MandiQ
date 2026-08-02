@@ -354,4 +354,25 @@ class MandiDB:
                 "UPDATE price_alerts SET triggered = 1, triggered_at = datetime('now') WHERE id = ?",
                 (alert_id,)
             )
-            
+
+    # ─── Cross-Mandi ──────────────────────────────────────────────────────────
+    def get_commodity_data_all_markets(self, commodity: str) -> List[Dict]:
+        sql = """
+            SELECT market, date, modal_price, arrival_qty
+            FROM price_records
+            WHERE commodity = ?
+            ORDER BY date ASC
+        """
+        with self._conn() as con:
+            rows = con.execute(sql, [commodity]).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_all_price_records(self) -> List[Dict]:
+        sql = """
+            SELECT commodity, market, date, modal_price, arrival_qty
+            FROM price_records
+            ORDER BY date ASC
+        """
+        with self._conn() as con:
+            rows = con.execute(sql).fetchall()
+        return [dict(r) for r in rows]

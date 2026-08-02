@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 # ── Compatibility imports from best_model_trainer ──
 from model_trainer import BestModelTrainer, build_features, MODELS_DIR
+from mandiq_reversion import MandiQReversion
 
 log = logging.getLogger("mandiq.predictor")
 
@@ -43,17 +44,35 @@ class MandiPredictor:
 
     def __init__(self):
         self._cache: Dict[str, Any] = {}
+        self.reversion_model = MandiQReversion()
+        self._load_reversion()
+
+    def _load_reversion(self):
+        path = os.path.join(MODELS_DIR, "mandiq_reversion.json")
+        if os.path.exists(path):
+            try:
+                self.reversion_model.load(path)
+                log.info(f"Loaded global reversion model from {path}")
+            except Exception as e:
+                log.error(f"Failed to load reversion model from {path}: {e}")
+        else:
+            log.warning(f"Reversion model parameters not found at {path}")
 
     def load_model(self, commodity: str, market: str):
         key = _model_key(commodity, market)
         path = os.path.join(MODELS_DIR, f"{key}.pkl")
         if not os.path.exists(path):
             log.warning(f"Model not found: {path}")
-            return
-        self._cache[key] = joblib.load(path)
-        log.info(f"Loaded model: {key}")
+        else:
+            self._cache[key] = joblib.load(path)
+            log.info(f"Loaded model: {key}")
+        self._load_reversion()
 
     def is_trained(self, commodity: str, market: str) -> bool:
+        self._load_reversion()
+        rev_key = f"{commodity.lower()}__{market.lower()}"
+        if rev_key in self.reversion_model.params:
+            return True
         key = _model_key(commodity, market)
         if key in self._cache:
             return True
@@ -81,10 +100,59 @@ class MandiPredictor:
         }
 
     def predict(self, commodity: str, market: str, historical_data: List[Dict],
-                days_ahead: int = 7) -> List[Dict]:
+                days_ahead: int = 7, model: str = "reversion") -> Any:
+        if model == "reversion":
+            hist_df = _records_to_df(historical_data)
+            recent_prices = hist_df["modal_price"].tail(15).tolist()
+            if not recent_prices:
+                return {"error": "No historical price records found"}
+
+            from datetime import date
+            today = pd.Timestamp(date.today())
+            last_date = max(hist_df["date"].max(), today - pd.Timedelta(days=1))
+
+            predictions = []
+            current_prices = list(recent_prices)
+
+            for step in range(1, days_ahead + 1):
+                next_date = last_date + timedelta(days=step)
+                res = self.reversion_model.predict(commodity, market, current_prices)
+                if "error" in res:
+                    if step == 1:
+                        return res
+                    break
+
+                pred_price = res["predicted_price"]
+                current_prices.append(pred_price)
+                if len(current_prices) > 15:
+                    current_prices.pop(0)
+
+                predictions.append({
+                    "date": next_date.strftime("%Y-%m-%d"),
+                    "predicted_price": res["predicted_price"],
+                    "lower_bound": res["price_low"],
+                    "upper_bound": res["price_high"],
+                    "direction": res["direction"],
+                    "signal": res["signal"],
+                    "confidence": res["expected_accuracy_pct"] or 58,
+                    "message": res["message"],
+                    "unit": "Rs./Quintal"
+                })
+
+            return predictions
+
+        # ── Ensemble Predictor (Demoted Fallback) ──
+        # WARNING: Multi-day recursive forecasting on near-random-walk daily prices is
+        # highly unreliable. The confidence heuristic (100 - spread/price * 300) has
+        # not been validated. For reliable next-day pricing and ranges, prefer the
+        # mean-reversion model (model='reversion').
         key = _model_key(commodity, market)
-        if not self.is_trained(commodity, market):
-            raise ValueError(f"No model for {commodity} @ {market}")
+        if key not in self._cache:
+            path = os.path.join(MODELS_DIR, f"{key}.pkl")
+            if os.path.exists(path):
+                self.load_model(commodity, market)
+            else:
+                raise ValueError(f"No ensemble model for {commodity} @ {market}")
 
         bundle = self._cache[key]
         feat_cols = bundle["feature_cols"]
