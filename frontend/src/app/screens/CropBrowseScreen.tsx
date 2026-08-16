@@ -32,7 +32,7 @@ const CROPS = [
 
 type CR = (typeof CROPS)[number] & { currentPrice: number | null; trend: 'up' | 'down' | 'stable'; available: boolean };
 
-export function CropSelectionScreen() {
+export function CropBrowseScreen() {
   const nav = useNavigate(); const { t } = useT();
   const [sq, setSq] = useState('');
   const [sc, setSc] = useState('all');

@@ -1,9 +1,10 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Header
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Header, Request, Query, Path as FastAPIPath, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from typing import Optional, List, Literal
 import logging
 import uvicorn
 import sys
@@ -12,6 +13,8 @@ import os
 import glob
 import time
 import subprocess
+from datetime import datetime, timedelta
+from rate_limiter import limiter
 
 from pdf_parser import parse_mandi_pdf
 from csv_parser import parse_mandi_csv
@@ -19,12 +22,9 @@ from model_trainer import MandiModelTrainer, safe_format
 from predictor import MandiPredictor
 from database import MandiDB
 from auth import create_access_token, send_otp as _send_otp, decode_access_token
-from firebase_admin import auth as firebase_auth
 from mandiq_cross_mandi import best_market_today, all_commodities
 from apscheduler.schedulers.background import BackgroundScheduler
 import pandas as pd
-
-otp_store: dict = {}
 scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
 
 # ─── Paths ─────────────────────────────────────────────────────────────────────
@@ -42,6 +42,13 @@ def _check_all_alerts():
     alerts = db.get_all_active_alerts()
     checked: dict = {}
     for alert in alerts:
+        # Fetch user name for the SMS template
+        user = db.get_user_by_id(alert["user_id"])
+        user_name = user.get("name") if (user and user.get("name")) else "Kisan"
+        import re
+        clean_name = re.sub(r'[^a-zA-Z0-9]', '', user_name)
+        cname_val = f"{clean_name}{alert['crop']}"
+
         key = f"{alert['crop']}|{alert['market']}"
         if key not in checked:
             records = db.get_data(alert["crop"], alert["market"])
@@ -58,7 +65,7 @@ def _check_all_alerts():
             msg = (f"MandiQ Alert! {crop_name} ka bhav {alert['market']} mein "
                    f"Rs {int(current_price)}/quintal ho gaya. "
                    f"Aapka target Rs {int(target)} tha. Bechne ka sahi samay! - MandiQ App")
-            send_sms(alert["mobile"], msg)
+            send_sms(alert["mobile"], msg, cname=cname_val, oid=int(target))
             db.mark_alert_triggered(alert["id"])
             log.info(f"Alert triggered & SMS sent: {alert['crop']} @ {alert['market']} = {current_price}")
 
@@ -126,6 +133,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    # Skip rate limiting for docs, openapi, or explicit OTP routes (OTP handled inside routes)
+    path = request.url.path
+    if path in ("/api/auth/send-otp", "/api/auth/verify-otp", "/docs", "/openapi.json", "/redoc", "/favicon.ico"):
+        return await call_next(request)
+
+    ip = request.client.host if request.client else "unknown"
+    
+    # Check if there is an Authorization header
+    auth_header = request.headers.get("authorization")
+    user_id = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[-1]
+        from auth import decode_access_token
+        try:
+            user_id = decode_access_token(token)
+        except Exception:
+            pass
+
+    if user_id is not None:
+        # Authenticated action: loose limit per user_id
+        if not limiter.check_auth_action_limit(str(user_id)):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many authenticated requests. Please slow down."}
+            )
+    else:
+        # Public action: moderate limit per IP
+        if not limiter.check_public_limit(ip):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please slow down."}
+            )
+
+    return await call_next(request)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    log.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Something went wrong. Please check server logs."}
+    )
+
 # ─── Singletons ────────────────────────────────────────────────────────────────
 db = MandiDB()
 trainer = MandiModelTrainer()
@@ -133,48 +185,49 @@ predictor = MandiPredictor()
 
 # ─── Request Models ─────────────────────────────────────────────────────────────
 class SendOtpRequest(BaseModel):
-    mobile: str
+    mobile: str = Field(..., min_length=10, max_length=10, pattern=r"^\d{10}$")
 
 class VerifyOtpRequest(BaseModel):
-    mobile: str
-    otp: str
-    role: str = "farmer"
+    mobile: str = Field(..., min_length=10, max_length=10, pattern=r"^\d{10}$")
+    otp: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
+    role: Literal["farmer", "trader"] = "farmer"
 
 class CompleteProfileRequest(BaseModel):
-    name: str
-    user_type: str
-    state: str = ""
-    district: str = ""
-    village: str = ""
-    crops: list = []
-    farm_size: str = ""
+    name: str = Field(..., min_length=2, max_length=100, pattern=r"^[a-zA-Z\s.]+$")
+    user_type: Literal["farmer", "trader"]
+    state: str = Field("", max_length=100)
+    district: str = Field("", max_length=100)
+    village: str = Field("", max_length=100)
+    crops: List[str] = Field(default_factory=list)
+    farm_size: str = Field("", max_length=50)
 
 class TrainRequest(BaseModel):
-    commodity: str
-    market: str = "Azadpur APMC"
-    model_type: str = "ensemble"
+    commodity: str = Field(..., min_length=2, max_length=100)
+    market: str = Field("Azadpur APMC", min_length=2, max_length=100)
+    model_type: Literal["ensemble", "reversion"] = "ensemble"
 
 class PredictRequest(BaseModel):
-    commodity: str
-    market: str = "Azadpur APMC"
-    days_ahead: int = 30
-    model: str = "reversion"  # "reversion" (default) or "ensemble"
+    commodity: str = Field(..., min_length=2, max_length=100)
+    market: str = Field("Azadpur APMC", min_length=2, max_length=100)
+    days_ahead: int = Field(30, ge=1, le=365)
+    model: Literal["reversion", "ensemble"] = "reversion"
 
 class CreateAlertRequest(BaseModel):
-    crop: str
-    market: str = "Azadpur APMC"
-    target_price: float
-    direction: str = "above"  # "above" or "below"
+    crop: str = Field(..., min_length=2, max_length=100)
+    market: str = Field("Azadpur APMC", min_length=2, max_length=100)
+    target_price: float = Field(..., gt=0.0)
+    direction: Literal["above", "below"] = "above"
 
 class RatingRequest(BaseModel):
-    stars: int
-    feedback: str = ""
+    stars: int = Field(..., ge=1, le=5)
+    feedback: str = Field("", max_length=500)
 
 class PredFeedbackRequest(BaseModel):
-    crop: str
-    market: str
-    accurate: str  # "yes" or "no"
-    comment: str = ""
+    crop: str = Field(..., min_length=2, max_length=100)
+    market: str = Field(..., min_length=2, max_length=100)
+    accurate: Literal["yes", "no"]
+    comment: str = Field("", max_length=500)
+
 
 
 # ─── Health ────────────────────────────────────────────────────────────────────
@@ -192,45 +245,73 @@ def health():
 
 
 # ─── Auth ──────────────────────────────────────────────────────────────────────
-class FirebaseVerifyRequest(BaseModel):
-    firebase_token: str
-    role: str = "farmer"
-
-@app.post("/api/auth/firebase-verify")
-def api_firebase_verify(req: FirebaseVerifyRequest):
-    try:
-        decoded = firebase_auth.verify_id_token(req.firebase_token)
-        phone = decoded.get("phone_number", "")
-        if not phone:
-            raise HTTPException(400, "Phone number nahi mila Firebase token mein")
-        mobile = phone.replace("+91", "").strip()
-        user = db.get_or_create_user(mobile, req.role)
-        token = create_access_token(user["id"])
-        return {"token": token, "user": user}
-    except firebase_auth.InvalidIdTokenError:
-        raise HTTPException(401, "Invalid Firebase token")
-    except Exception as e:
-        raise HTTPException(500, f"Firebase verify failed: {e}")
 
 @app.post("/api/auth/send-otp")
-def api_send_otp(req: SendOtpRequest):
+def api_send_otp(req: SendOtpRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    allowed, wait_seconds = limiter.check_otp_limit(ip, req.mobile)
+    if not allowed:
+        raise HTTPException(429, f"Too many OTP requests. Please try again in {wait_seconds} seconds.")
+
     if len(req.mobile) != 10 or not req.mobile.isdigit():
         raise HTTPException(400, "10 digit mobile number chahiye")
+    
     otp = str(random.randint(100000, 999999))
-    otp_store[req.mobile] = otp
+    # Expiration is 5 minutes from now
+    expires_at = (datetime.utcnow() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    db.save_otp(req.mobile, otp, expires_at)
+    
     _send_otp(req.mobile, otp)
+    
     return {"status": "sent"}
 
 @app.post("/api/auth/verify-otp")
-def api_verify_otp(req: VerifyOtpRequest):
-    stored = otp_store.get(req.mobile)
-    if req.otp != "000000" and req.otp != stored:
+def api_verify_otp(req: VerifyOtpRequest, request: Request):
+    ip = request.client.host if request.client else "unknown"
+    allowed, wait_seconds = limiter.check_otp_limit(ip, req.mobile)
+    if not allowed:
+        raise HTTPException(429, f"Too many verification attempts. Please try again in {wait_seconds} seconds.")
+
+    otp_record = db.get_otp(req.mobile)
+    if not otp_record:
+        raise HTTPException(400, "OTP generate nahi kiya gaya hai ya expired hai")
+    
+    # Check expiry
+    try:
+        expiry = datetime.strptime(otp_record["expires_at"], "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        expiry = datetime.utcnow()
+        
+    if datetime.utcnow() > expiry:
+        db.delete_otp(req.mobile)
+        raise HTTPException(400, "OTP expire ho gaya hai")
+        
+    if req.otp != "000000" and req.otp != otp_record["otp"]:
         raise HTTPException(400, "Galat OTP")
-    otp_store.pop(req.mobile, None)
-    user = db.get_or_create_user(req.mobile, req.role)
+        
+    db.delete_otp(req.mobile)
+    
+    # Reset backoff on success
+    limiter.reset_otp_backoff(ip, req.mobile)
+    
+    # Fetch or create user
+    user = db.get_user_by_mobile_number(req.mobile)
+    is_new = False
+    if not user:
+        user = db.create_user(req.mobile)
+        is_new = True
+    else:
+        # Check if they have not completed onboarding steps yet (missing name or user_type)
+        if not user.get("name") or not user.get("user_type"):
+            is_new = True
+            
     token = create_access_token(user["id"])
-    is_new = not user.get("name")
-    return {"status": "success", "token": token, "user": dict(user), "is_new_user": is_new}
+    return {
+        "status": "success",
+        "token": token,
+        "user": dict(user),
+        "is_new_user": is_new
+    }
 
 @app.post("/api/auth/complete-profile")
 def api_complete_profile(req: CompleteProfileRequest, authorization: Optional[str] = Header(None)):
@@ -239,9 +320,13 @@ def api_complete_profile(req: CompleteProfileRequest, authorization: Optional[st
     user_id = decode_access_token(authorization.split(" ")[-1])
     if not user_id:
         raise HTTPException(401, "Invalid token")
+        
     farmer_details = {
-        "state": req.state, "district": req.district,
-        "village": req.village, "crops": req.crops, "farm_size": req.farm_size
+        "state": req.state,
+        "district": req.district,
+        "village": req.village,
+        "crops": req.crops,
+        "farm_size": req.farm_size
     }
     db.update_user_profile(user_id, req.name, req.user_type, farmer_details)
     return {"status": "success", "user": dict(db.get_user_by_id(user_id))}
@@ -267,23 +352,68 @@ async def upload_pdf(file: UploadFile = File(...)):
     if not is_pdf and not is_csv:
         raise HTTPException(400, "Only PDF or CSV files accepted.")
 
-    tmp_path = UPLOAD_DIR / file.filename
+    # 1. Enforce size limit
+    max_size = int(os.environ.get("MAX_UPLOAD_SIZE", 10 * 1024 * 1024))  # Default 10MB
     content = await file.read()
+    if len(content) > max_size:
+        raise HTTPException(400, f"File is too large. Max allowed size is {max_size / (1024 * 1024):.1f}MB.")
+
+    # 2. Validate MIME content signature (Magic bytes)
+    if is_pdf and not content.startswith(b"%PDF"):
+        raise HTTPException(400, "Invalid PDF file: Content signature does not match PDF format.")
+
+    if is_csv:
+        try:
+            decoded = content.decode("utf-8")
+            if not decoded.strip():
+                raise HTTPException(400, "Invalid CSV file: File is empty.")
+            lines = decoded.splitlines()
+            first_line = lines[0] if lines else ""
+            # Ensure it looks like a delimiter-separated value file
+            if not any(delim in first_line for delim in (",", ";", "\t", "|")):
+                raise HTTPException(400, "Invalid CSV file: No valid delimiter found in header line.")
+        except UnicodeDecodeError:
+            raise HTTPException(400, "Invalid CSV file: Binary files not allowed.")
+
+    # 3. Sanitize filename to prevent Path Traversal
+    import re
+    import uuid
+    raw_name = os.path.basename(file.filename)
+    sanitized = re.sub(r"[^a-zA-Z0-9_.-]", "", raw_name)
+    if not sanitized or sanitized in (".", ".."):
+        # Fallback to random unique name
+        ext = ".pdf" if is_pdf else ".csv"
+        sanitized = f"upload_{uuid.uuid4().hex}{ext}"
+    else:
+        # Prepend a random UUID to avoid any overwriting of system or other users' files
+        ext = ".pdf" if is_pdf else ".csv"
+        # strip existing extension and force correct one
+        base_name = sanitized.rsplit(".", 1)[0]
+        sanitized = f"{base_name}_{uuid.uuid4().hex}{ext}"
+
+    tmp_path = UPLOAD_DIR / sanitized
+
+    # Write contents securely
     with open(tmp_path, "wb") as f:
         f.write(content)
 
     try:
         records = parse_mandi_csv(str(tmp_path)) if is_csv else parse_mandi_pdf(str(tmp_path))
     except Exception as e:
+        # Clean up the file on parsing failure
+        if tmp_path.exists():
+            tmp_path.unlink()
         raise HTTPException(500, f"File parsing failed: {e}")
 
     if not records:
+        if tmp_path.exists():
+            tmp_path.unlink()
         raise HTTPException(422, "No price data found. Check format.")
 
     inserted = db.upsert_records(records)
     return {
         "status": "success",
-        "file": file.filename,
+        "file": sanitized,
         "records_parsed": len(records),
         "records_inserted": inserted,
         "commodities": list({r["commodity"] for r in records}),
@@ -295,21 +425,32 @@ def list_commodities():
     return {"commodities": db.list_commodities()}
 
 @app.get("/api/history", tags=["Data"])
-def get_history(commodity: str, market: str = "Azadpur APMC", start: Optional[str] = None, end: Optional[str] = None):
+def get_history(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100),
+    start: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+):
     data = db.get_data(commodity=commodity, market=market, start=start, end=end)
     if not data:
         raise HTTPException(404, f"No data for commodity='{commodity}' market='{market}'")
     return {"commodity": commodity, "market": market, "count": len(data), "data": data}
 
 @app.get("/api/stats", tags=["Analytics"])
-def get_stats(commodity: str, market: str = "Azadpur APMC"):
+def get_stats(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100)
+):
     stats = db.get_stats(commodity=commodity, market=market)
     if not stats:
         raise HTTPException(404, "No data available.")
     return stats
 
 @app.delete("/api/data", tags=["Data"])
-def delete_data(commodity: str, market: str = "Azadpur APMC"):
+def delete_data(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100)
+):
     db.delete_data(commodity=commodity, market=market)
     return {"status": "deleted", "commodity": commodity, "market": market}
 
@@ -337,14 +478,20 @@ def _run_training(data, commodity, market, model_type, model_key):
         db.set_training_status(model_key, "failed", error=str(e))
 
 @app.get("/api/train/status", tags=["Model"])
-def train_status(commodity: str, market: str = "Azadpur APMC"):
+def train_status(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100)
+):
     status = db.get_training_status(f"{commodity}::{market}")
     if not status:
         raise HTTPException(404, "No training job found.")
     return status
 
 @app.get("/api/model/info", tags=["Model"])
-def model_info(commodity: str, market: str = "Azadpur APMC"):
+def model_info(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100)
+):
     info = predictor.get_model_info(commodity, market)
     if not info:
         raise HTTPException(404, "Model not trained yet.")
@@ -376,11 +523,19 @@ def predict(req: PredictRequest):
             "unit": "Rs./Quintal", "model": "ensemble", "predictions": preds}
 
 @app.get("/api/predict", tags=["Prediction"])
-def predict_get(commodity: str, market: str = "Azadpur APMC", days_ahead: int = 30, model: str = "reversion"):
+def predict_get(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100),
+    days_ahead: int = Query(30, ge=1, le=365),
+    model: Literal["reversion", "ensemble"] = "reversion"
+):
     return predict(PredictRequest(commodity=commodity, market=market, days_ahead=days_ahead, model=model))
 
 @app.get("/api/seasonal", tags=["Analytics"])
-def seasonal_analysis(commodity: str, market: str = "Azadpur APMC"):
+def seasonal_analysis(
+    commodity: str = Query(..., min_length=2, max_length=100),
+    market: str = Query("Azadpur APMC", min_length=2, max_length=100)
+):
     data = db.get_data(commodity=commodity, market=market)
     if not data:
         raise HTTPException(404, "No data.")
@@ -430,7 +585,7 @@ def manual_weekly_train(background_tasks: BackgroundTasks):
 # ─── Cross-Mandi ───────────────────────────────────────────────────────────────
 @app.get("/api/best-market/{commodity}", tags=["Cross-Mandi"])
 @app.get("/best-market/{commodity}", tags=["Cross-Mandi"])
-def get_best_market(commodity: str):
+def get_best_market(commodity: str = FastAPIPath(..., min_length=2, max_length=100)):
     records = db.get_commodity_data_all_markets(commodity)
     if not records:
         raise HTTPException(404, f"No cross-market data for '{commodity}'")
@@ -467,9 +622,9 @@ def api_create_alert(req: CreateAlertRequest, authorization: Optional[str] = Hea
     return {"status": "created", "alert_id": alert_id}
 
 @app.get("/api/alerts")
-def api_get_alerts(authorization: Optional[str] = Header(None)):
+def api_get_alerts(triggered: int = Query(0, ge=0, le=1), authorization: Optional[str] = Header(None)):
     user = _get_user_from_token(authorization)
-    return db.get_alerts(user["id"])
+    return db.get_alerts_by_status(user["id"], triggered)
 
 @app.delete("/api/alerts/{alert_id}")
 def api_delete_alert(alert_id: int, authorization: Optional[str] = Header(None)):

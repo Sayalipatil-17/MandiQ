@@ -121,7 +121,7 @@ export function ProfileScreen() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/40">
-              <img src="/kisan.png" alt="kisan" className="w-full h-full object-cover" />
+              <img src="/farmer-avatar.svg" alt="kisan" className="w-full h-full object-cover" />
             </div>
             <div className="text-white">
               <h2 className="text-xl font-bold">{user?.name || 'Namaste'}</h2>
@@ -386,7 +386,7 @@ export function ProfileScreen() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl overflow-hidden">
-                  <img src="/kisan.png" alt="MandiQ" className="w-full h-full object-cover" />
+                  <img src="/farmer-avatar.svg" alt="MandiQ" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="font-bold text-gray-800 text-lg">MandiQ</p>

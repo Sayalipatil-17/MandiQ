@@ -90,13 +90,21 @@ class MandiSQLiteDB:
                     error       TEXT,
                     updated_at  TEXT DEFAULT (datetime('now'))
                 );
+
                 CREATE TABLE IF NOT EXISTS users (
                     id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                    mobile          TEXT    UNIQUE NOT NULL,
-                    role            TEXT    DEFAULT 'farmer',
+                    mobile_number   TEXT    UNIQUE NOT NULL,
                     name            TEXT,
+                    user_type       TEXT,
+                    is_verified     INTEGER DEFAULT 0,
                     farmer_details  TEXT,
                     created_at      TEXT    DEFAULT (datetime('now'))
+                );
+
+                CREATE TABLE IF NOT EXISTS otps (
+                    mobile_number   TEXT PRIMARY KEY,
+                    otp             TEXT NOT NULL,
+                    expires_at      TEXT NOT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS price_alerts (
@@ -133,16 +141,48 @@ class MandiSQLiteDB:
             """)
         log.info(f"SQLite DB ready: {self.db_path}")
 
-    def get_or_create_user(self, mobile: str, role: str = 'farmer') -> dict:
+    def get_user_by_mobile_number(self, mobile_number: str) -> Optional[dict]:
         with self._conn() as con:
-            con.execute("INSERT OR IGNORE INTO users (mobile, role) VALUES (?, ?)", (mobile, role))
-            row = con.execute("SELECT * FROM users WHERE mobile = ?", (mobile,)).fetchone()
+            row = con.execute("SELECT * FROM users WHERE mobile_number = ?", (mobile_number,)).fetchone()
+        return dict(row) if row else None
+
+    def create_user(self, mobile_number: str) -> dict:
+        with self._conn() as con:
+            con.execute("INSERT OR IGNORE INTO users (mobile_number, is_verified) VALUES (?, 1)", (mobile_number,))
+            row = con.execute("SELECT * FROM users WHERE mobile_number = ?", (mobile_number,)).fetchone()
         return dict(row)
 
-    def get_user_by_id(self, user_id: int) -> dict:
+    def get_user_by_id(self, user_id: int) -> Optional[dict]:
         with self._conn() as con:
             row = con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         return dict(row) if row else None
+
+    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
+        with self._conn() as con:
+            con.execute("""
+                UPDATE users
+                SET name = ?, user_type = ?, farmer_details = ?
+                WHERE id = ?
+            """, (name, user_type, json.dumps(farmer_details), user_id))
+
+    def save_otp(self, mobile_number: str, otp: str, expires_at: str):
+        with self._conn() as con:
+            con.execute("""
+                INSERT INTO otps (mobile_number, otp, expires_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(mobile_number) DO UPDATE SET
+                    otp = excluded.otp,
+                    expires_at = excluded.expires_at
+            """, (mobile_number, otp, expires_at))
+
+    def get_otp(self, mobile_number: str) -> Optional[dict]:
+        with self._conn() as con:
+            row = con.execute("SELECT * FROM otps WHERE mobile_number = ?", (mobile_number,)).fetchone()
+        return dict(row) if row else None
+
+    def delete_otp(self, mobile_number: str):
+        with self._conn() as con:
+            con.execute("DELETE FROM otps WHERE mobile_number = ?", (mobile_number,))
 
     def upsert_records(self, records: List[Dict[str, Any]]) -> int:
         inserted = 0
@@ -346,14 +386,6 @@ class MandiSQLiteDB:
                 (commodity, market),
             )
 
-    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
-        with self._conn() as con:
-            con.execute("""
-                UPDATE users
-                SET name = ?, role = ?, farmer_details = ?
-                WHERE id = ?
-            """, (name, user_type, json.dumps(farmer_details), user_id))
-
     def create_alert(self, user_id: int, mobile: str, crop: str, market: str, target_price: float, direction: str = "above") -> int:
         with self._conn() as con:
             cur = con.execute(
@@ -367,6 +399,14 @@ class MandiSQLiteDB:
             rows = con.execute(
                 "SELECT * FROM price_alerts WHERE user_id = ? AND triggered = 0 ORDER BY created_at DESC",
                 (user_id,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_alerts_by_status(self, user_id: int, triggered: int) -> List[Dict]:
+        with self._conn() as con:
+            rows = con.execute(
+                "SELECT * FROM price_alerts WHERE user_id = ? AND triggered = ? ORDER BY created_at DESC",
+                (user_id, triggered)
             ).fetchall()
         return [dict(r) for r in rows]
 
@@ -459,7 +499,8 @@ class MandiMongoDB:
             unique=True
         )
         self.db.price_records.create_index([("date", pymongo.ASCENDING)])
-        self.db.users.create_index([("mobile", pymongo.ASCENDING)], unique=True)
+        self.db.users.create_index([("mobile_number", pymongo.ASCENDING)], unique=True)
+        self.db.otps.create_index([("mobile_number", pymongo.ASCENDING)], unique=True)
         self.db.training_jobs.create_index([("model_key", pymongo.ASCENDING)], unique=True)
         self.db.price_alerts.create_index([("id", pymongo.ASCENDING)], unique=True)
         
@@ -474,15 +515,22 @@ class MandiMongoDB:
         )
         return ret["seq"]
 
-    def get_or_create_user(self, mobile: str, role: str = 'farmer') -> dict:
-        user = self.db.users.find_one({"mobile": mobile})
+    def get_user_by_mobile_number(self, mobile_number: str) -> Optional[dict]:
+        user = self.db.users.find_one({"mobile_number": mobile_number})
+        if user:
+            user.pop("_id", None)
+        return user
+
+    def create_user(self, mobile_number: str) -> dict:
+        user = self.db.users.find_one({"mobile_number": mobile_number})
         if not user:
             seq = self._get_next_sequence("users")
             user = {
                 "id": seq,
-                "mobile": mobile,
-                "role": role,
+                "mobile_number": mobile_number,
                 "name": None,
+                "user_type": None,
+                "is_verified": 1,
                 "farmer_details": None,
                 "created_at": _now_str()
             }
@@ -490,11 +538,39 @@ class MandiMongoDB:
         user.pop("_id", None)
         return user
 
-    def get_user_by_id(self, user_id: int) -> dict:
+    def get_user_by_id(self, user_id: int) -> Optional[dict]:
         user = self.db.users.find_one({"id": int(user_id)})
         if user:
             user.pop("_id", None)
         return user
+
+    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
+        self.db.users.update_one(
+            {"id": int(user_id)},
+            {
+                "$set": {
+                    "name": name,
+                    "user_type": user_type,
+                    "farmer_details": farmer_details
+                }
+            }
+        )
+
+    def save_otp(self, mobile_number: str, otp: str, expires_at: str):
+        self.db.otps.update_one(
+            {"mobile_number": mobile_number},
+            {"$set": {"otp": otp, "expires_at": expires_at}},
+            upsert=True
+        )
+
+    def get_otp(self, mobile_number: str) -> Optional[dict]:
+        otp_doc = self.db.otps.find_one({"mobile_number": mobile_number})
+        if otp_doc:
+            otp_doc.pop("_id", None)
+        return otp_doc
+
+    def delete_otp(self, mobile_number: str):
+        self.db.otps.delete_one({"mobile_number": mobile_number})
 
     def upsert_records(self, records: List[Dict[str, Any]]) -> int:
         inserted = 0
@@ -740,18 +816,6 @@ class MandiMongoDB:
     def delete_data(self, commodity: str, market: str):
         self.db.price_records.delete_many({"commodity": commodity, "market": market})
 
-    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
-        self.db.users.update_one(
-            {"id": int(user_id)},
-            {
-                "$set": {
-                    "name": name,
-                    "role": user_type,
-                    "farmer_details": farmer_details
-                }
-            }
-        )
-
     def create_alert(self, user_id: int, mobile: str, crop: str, market: str, target_price: float, direction: str = "above") -> int:
         seq = self._get_next_sequence("price_alerts")
         alert = {
@@ -772,6 +836,17 @@ class MandiMongoDB:
     def get_alerts(self, user_id: int) -> List[Dict]:
         cursor = self.db.price_alerts.find(
             {"user_id": int(user_id), "triggered": 0}
+        ).sort("created_at", pymongo.DESCENDING)
+        
+        results = []
+        for r in cursor:
+            r.pop("_id", None)
+            results.append(r)
+        return results
+
+    def get_alerts_by_status(self, user_id: int, triggered: int) -> List[Dict]:
+        cursor = self.db.price_alerts.find(
+            {"user_id": int(user_id), "triggered": int(triggered)}
         ).sort("created_at", pymongo.DESCENDING)
         
         results = []
@@ -869,11 +944,26 @@ class MandiDB:
             log.info(f"MandiDB: Routed to SQLite backend ({db_path}).")
             self._impl = MandiSQLiteDB(db_path)
 
-    def get_or_create_user(self, mobile: str, role: str = 'farmer') -> dict:
-        return self._impl.get_or_create_user(mobile, role)
+    def get_user_by_mobile_number(self, mobile_number: str) -> Optional[dict]:
+        return self._impl.get_user_by_mobile_number(mobile_number)
 
-    def get_user_by_id(self, user_id: int) -> dict:
+    def create_user(self, mobile_number: str) -> dict:
+        return self._impl.create_user(mobile_number)
+
+    def get_user_by_id(self, user_id: int) -> Optional[dict]:
         return self._impl.get_user_by_id(user_id)
+
+    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
+        self._impl.update_user_profile(user_id, name, user_type, farmer_details)
+
+    def save_otp(self, mobile_number: str, otp: str, expires_at: str):
+        self._impl.save_otp(mobile_number, otp, expires_at)
+
+    def get_otp(self, mobile_number: str) -> Optional[dict]:
+        return self._impl.get_otp(mobile_number)
+
+    def delete_otp(self, mobile_number: str):
+        self._impl.delete_otp(mobile_number)
 
     def upsert_records(self, records: List[Dict[str, Any]]) -> int:
         return self._impl.upsert_records(records)
@@ -908,14 +998,14 @@ class MandiDB:
     def delete_data(self, commodity: str, market: str):
         self._impl.delete_data(commodity, market)
 
-    def update_user_profile(self, user_id: int, name: str, user_type: str, farmer_details: dict):
-        self._impl.update_user_profile(user_id, name, user_type, farmer_details)
-
     def create_alert(self, user_id: int, mobile: str, crop: str, market: str, target_price: float, direction: str = "above") -> int:
         return self._impl.create_alert(user_id, mobile, crop, market, target_price, direction)
 
     def get_alerts(self, user_id: int) -> List[Dict]:
         return self._impl.get_alerts(user_id)
+
+    def get_alerts_by_status(self, user_id: int, triggered: int) -> List[Dict]:
+        return self._impl.get_alerts_by_status(user_id, triggered)
 
     def delete_alert(self, alert_id: int, user_id: int):
         self._impl.delete_alert(alert_id, user_id)

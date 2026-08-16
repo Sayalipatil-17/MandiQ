@@ -90,8 +90,13 @@ async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const token = localStorage.getItem('mandiq_token');
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: { ...headers, ...(options?.headers as any) },
     ...options,
   });
 
@@ -221,6 +226,38 @@ export const mandiApi = {
     const params = new URLSearchParams({ commodity, market });
     return request<{ status: string }>(`/api/data?${params}`, { method: "DELETE" });
   },
+
+  /** Send OTP to mobile */
+  sendOtp: (mobile: string) =>
+    request<{ status: string; testing_otp?: string }>("/api/auth/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ mobile }),
+    }),
+
+  /** Verify OTP */
+  verifyOtp: (mobile: string, otp: string) =>
+    request<{ status: string; token: string; user: any; is_new_user: boolean }>("/api/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ mobile, otp }),
+    }),
+
+  /** Complete user profile */
+  completeProfile: (profile: {
+    name: string;
+    user_type: string;
+    state: string;
+    district: string;
+    village: string;
+    crops: string[];
+    farm_size: string;
+  }) =>
+    request<{ status: string; user: any }>("/api/auth/complete-profile", {
+      method: "POST",
+      body: JSON.stringify(profile),
+    }),
+
+  /** Fetch current logged-in user profile */
+  me: () => request<any>("/api/auth/me"),
 };
 
 export default mandiApi;

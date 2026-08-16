@@ -24,7 +24,9 @@ export function AlertsScreen() {
   const [selectedCrop, setSelectedCrop] = useState(crop);
   const [direction, setDirection] = useState<'above' | 'below'>('above');
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [notifications, setNotifications] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
   const [bestDay, setBestDay] = useState(() => localStorage.getItem('bestDayAlert') === 'on');
@@ -36,9 +38,28 @@ export function AlertsScreen() {
     setLoading(true);
     try {
       const r = await fetch(`${BASE_URL}/api/alerts`, { headers: authHeaders() });
-      if (r.ok) setAlerts(await r.json());
-    } catch {}
+      if (r.ok) {
+        setAlerts(await r.json());
+      } else {
+        console.error("GET active alerts failed:", r.status);
+      }
+    } catch (err) {
+      console.error("GET active alerts exception:", err);
+    }
     setLoading(false);
+
+    setNotifLoading(true);
+    try {
+      const r = await fetch(`${BASE_URL}/api/alerts?triggered=1`, { headers: authHeaders() });
+      if (r.ok) {
+        setNotifications(await r.json());
+      } else {
+        console.error("GET triggered alerts failed:", r.status);
+      }
+    } catch (err) {
+      console.error("GET triggered alerts exception:", err);
+    }
+    setNotifLoading(false);
   }
 
   async function createAlert() {
@@ -65,6 +86,7 @@ export function AlertsScreen() {
     try {
       await fetch(`${BASE_URL}/api/alerts/${id}`, { method: 'DELETE', headers: authHeaders() });
       setAlerts(prev => prev.filter(a => a.id !== id));
+      setNotifications(prev => prev.filter(a => a.id !== id));
     } catch {}
   }
 
@@ -249,6 +271,45 @@ export function AlertsScreen() {
                 </div>
                 <button onClick={() => deleteAlert(a.id)}
                   className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Triggered Alerts History (Notifications) */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="w-5 h-5 text-[#2d6a3e]" />
+            <p className="font-semibold text-gray-800">{t('alerts.historyTitle')}</p>
+          </div>
+
+          {notifLoading && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-[#2d6a3e]" />
+            </div>
+          )}
+
+          {!notifLoading && notifications.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-4">{t('alerts.noHistory')}</p>
+          )}
+
+          <div className="space-y-3">
+            {notifications.map(a => (
+              <div key={a.id} className="flex items-center justify-between bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{CROP_ICONS[a.crop] || '🌱'}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{cropName(a.crop, t)}</p>
+                    <p className="text-xs text-gray-500">
+                      Target crossed: <span className="font-bold text-gray-700">₹{a.target_price}</span>
+                    </p>
+                    <p className="text-[10px] text-gray-400">Triggered: {a.triggered_at ? new Date(a.triggered_at).toLocaleString('en-IN') : ''}</p>
+                  </div>
+                </div>
+                <button onClick={() => deleteAlert(a.id)}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

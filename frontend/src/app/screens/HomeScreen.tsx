@@ -161,6 +161,7 @@ function ChartSection({ forecastOnly, t }: { forecastOnly: { label: string; pric
 
 export function HomeScreen() {
   const [userName, setUserName] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const { t } = useT();
 
@@ -169,6 +170,15 @@ export function HomeScreen() {
     if (!token) return;
     fetch(`${BASE_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => setUserName(d.name || ''));
+
+    fetch(`${BASE_URL}/api/alerts?triggered=1`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d)) {
+          setUnreadCount(d.length);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const [selectedMarket, setSelectedMarket] = useState(localStorage.getItem('selectedMarket') || '');
@@ -277,7 +287,7 @@ export function HomeScreen() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white/40">
-              <img src="/kisan.png" alt="kisan" className="w-full h-full object-cover" />
+              <img src="/farmer-avatar.svg" alt="kisan" className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="text-white/70 text-xs">{t('home.namaste')}</p>
@@ -286,7 +296,9 @@ export function HomeScreen() {
           </div>
           <button onClick={() => navigate('/alerts')} className="relative p-2.5 bg-white/20 backdrop-blur rounded-xl border border-white/30">
             <Bell className="w-5 h-5 text-white" />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E8692A] rounded-full text-white text-xs flex items-center justify-center font-bold">3</span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E8692A] rounded-full text-white text-xs flex items-center justify-center font-bold">{unreadCount}</span>
+            )}
           </button>
         </div>
 
