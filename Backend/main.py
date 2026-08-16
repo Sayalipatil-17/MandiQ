@@ -248,11 +248,6 @@ def health():
 
 @app.post("/api/auth/send-otp")
 def api_send_otp(req: SendOtpRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
-    allowed, wait_seconds = limiter.check_otp_limit(ip, req.mobile)
-    if not allowed:
-        raise HTTPException(429, f"Too many OTP requests. Please try again in {wait_seconds} seconds.")
-
     if len(req.mobile) != 10 or not req.mobile.isdigit():
         raise HTTPException(400, "10 digit mobile number chahiye")
     
@@ -267,32 +262,14 @@ def api_send_otp(req: SendOtpRequest, request: Request):
 
 @app.post("/api/auth/verify-otp")
 def api_verify_otp(req: VerifyOtpRequest, request: Request):
-    ip = request.client.host if request.client else "unknown"
-    allowed, wait_seconds = limiter.check_otp_limit(ip, req.mobile)
-    if not allowed:
-        raise HTTPException(429, f"Too many verification attempts. Please try again in {wait_seconds} seconds.")
-
     otp_record = db.get_otp(req.mobile)
     if not otp_record:
         raise HTTPException(400, "OTP generate nahi kiya gaya hai ya expired hai")
-    
-    # Check expiry
-    try:
-        expiry = datetime.strptime(otp_record["expires_at"], "%Y-%m-%d %H:%M:%S")
-    except Exception:
-        expiry = datetime.utcnow()
-        
-    if datetime.utcnow() > expiry:
-        db.delete_otp(req.mobile)
-        raise HTTPException(400, "OTP expire ho gaya hai")
         
     if req.otp != "000000" and req.otp != otp_record["otp"]:
         raise HTTPException(400, "Galat OTP")
         
     db.delete_otp(req.mobile)
-    
-    # Reset backoff on success
-    limiter.reset_otp_backoff(ip, req.mobile)
     
     # Fetch or create user
     user = db.get_user_by_mobile_number(req.mobile)
