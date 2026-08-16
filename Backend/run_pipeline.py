@@ -15,6 +15,9 @@ import pandas as pd
 import requests as req
 import logging
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from captcha_solver import get_solved_captcha, report_bad_captcha
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(message)s")
 log = logging.getLogger("pipeline")
 
@@ -78,13 +81,28 @@ def scrape(crop, commodity_id, from_date, to_date):
         "from_date":from_date,"to_date":to_date,"page":"1","limit":"50",
     }
     all_rows, page = [], 1
+    captcha_retries = 0
     while page <= 100:
         body["page"] = str(page)
+        try:
+            captcha_key, captcha_answer, captcha_id = get_solved_captcha()
+        except Exception as e:
+            log.error(f"  Captcha solve error: {e}"); break
+        body["captcha_key"] = captcha_key
+        body["captcha"] = captcha_answer
         try:
             r = req.post(API_URL, json=body, headers=API_HEADERS, timeout=90)
             js = r.json()
         except Exception as e:
             log.error(f"  Page {page} error: {e}"); break
+        if js.get("code") in ("TOKEN_OR_CAPTCHA_REQUIRED", "INVALID_CAPTCHA"):
+            captcha_retries += 1
+            report_bad_captcha(captcha_id)
+            if captcha_retries > 5:
+                log.error("  Captcha rejected 5 times, giving up"); break
+            log.warning(f"  Captcha rejected, reporting bad + retrying ({captcha_retries}/5)...")
+            continue
+        captcha_retries = 0
         if not js.get("status"): break
         for rec in js.get("data",{}).get("records",[]):
             all_rows.extend(rec.get("data",[]))

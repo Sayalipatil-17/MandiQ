@@ -83,10 +83,10 @@ export function PastTrendScreen() {
   const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
 
   return (
-    <div className="min-h-screen bg-[#f4f6f4] pb-24 max-w-md mx-auto">
+    <div className="min-h-screen bg-[#f4f6f4] pb-24 max-w-md mx-auto mq-fadein">
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#1e5631] via-[#2d6a3e] to-[#16a34a] px-6 pt-8 pb-6 rounded-b-[2rem] shadow-lg">
+      <div className="mq-header px-6 pt-10 pb-6 rounded-b-[2.5rem]">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => nav('/home')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-white" />
@@ -190,19 +190,19 @@ export function PastTrendScreen() {
             {/* Stats grid */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
-                <p className="text-xs text-gray-400 mb-1">{t('common.avg')}</p>
-                <p className="text-lg font-bold text-[#1b4228]">₹{avgPrice}</p>
-                <p className="text-[10px] text-gray-400">{t('common.perQuintal')}</p>
+                <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">{t('common.avg')}</p>
+                <p className="mq-price text-xl text-[#1b4228]">₹{avgPrice}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{t('common.perQuintal')}</p>
               </div>
               <div className="bg-red-50 rounded-2xl p-4 shadow-sm border border-red-100 text-center">
-                <p className="text-xs text-gray-400 mb-1">{t('common.min')}</p>
-                <p className="text-lg font-bold text-red-600">₹{minPrice}</p>
-                <p className="text-[10px] text-gray-400">{fmtDate(minDate)}</p>
+                <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">{t('common.min')}</p>
+                <p className="mq-price text-xl text-red-600">₹{minPrice}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{fmtDate(minDate)}</p>
               </div>
               <div className="bg-green-50 rounded-2xl p-4 shadow-sm border border-green-100 text-center">
-                <p className="text-xs text-gray-400 mb-1">{t('common.max')}</p>
-                <p className="text-lg font-bold text-green-600">₹{maxPrice}</p>
-                <p className="text-[10px] text-gray-400">{fmtDate(maxDate)}</p>
+                <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">{t('common.max')}</p>
+                <p className="mq-price text-xl text-green-600">₹{maxPrice}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{fmtDate(maxDate)}</p>
               </div>
             </div>
 

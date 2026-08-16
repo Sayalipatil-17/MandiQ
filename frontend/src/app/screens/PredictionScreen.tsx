@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, ThumbsUp, ThumbsDown, Cloud, TrendingUp, AlertCircle, Loader2, Calendar, Target } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
+import { SupportChat } from '../components/SupportChat';
 import { Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Area, AreaChart, ReferenceLine, CartesianGrid } from 'recharts';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
@@ -36,6 +37,8 @@ export function PredictionScreen() {
   const nav = useNavigate(); const { t } = useT();
   const [fb, setFb] = useState<'up' | 'down' | null>(null);
   const [cm, setCm] = useState('');
+  const [cmErr, setCmErr] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   const crop = localStorage.getItem('selectedCrop') || 'Tomato';
   const mkt = localStorage.getItem('selectedMarket') || 'Azadpur APMC';
   const ml = ML[mkt] || mkt;
@@ -272,28 +275,68 @@ export function PredictionScreen() {
             </div>
 
             <div className="border-t border-[#f97316]/15 pt-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">{t('pred.wasAccurate')}</p>
-              <div className="flex gap-3 mb-3">
-                <button onClick={() => setFb('up')}
-                  className={`flex-1 py-3 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-medium ${fb === 'up' ? 'bg-[#16a34a] border-[#16a34a] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-[#16a34a]/50'}`}>
-                  <ThumbsUp className="w-4 h-4" />{t('pred.yes')}
-                </button>
-                <button onClick={() => setFb('down')}
-                  className={`flex-1 py-3 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-medium ${fb === 'down' ? 'bg-red-500 border-red-500 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-red-300'}`}>
-                  <ThumbsDown className="w-4 h-4" />{t('pred.no')}
-                </button>
-              </div>
-              {fb && (
-                <div className="space-y-3">
-                  <Textarea placeholder="Optional feedback" value={cm} onChange={(e) => setCm(e.target.value)} className="rounded-2xl resize-none border-gray-200 text-sm" rows={3} />
-                  <Button className="w-full bg-[#2d6a3e] hover:bg-[#1b4228] rounded-2xl font-semibold">{t('pred.submit')}</Button>
+              {submitted ? (
+                <div className="flex items-center gap-2 py-2">
+                  <span className="text-xl">🙏</span>
+                  <p className="text-sm font-medium text-[#2d6a3e]">{t('pred.submitted')}</p>
                 </div>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-700 mb-3">{t('pred.wasAccurate')}</p>
+                  <div className="flex gap-3 mb-3">
+                    <button onClick={() => { setFb('up'); setCm(''); setCmErr(''); }}
+                      className={`flex-1 py-3 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-medium ${fb === 'up' ? 'bg-[#16a34a] border-[#16a34a] text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-[#16a34a]/50'}`}>
+                      <ThumbsUp className="w-4 h-4" />{t('pred.yes')}
+                    </button>
+                    <button onClick={() => { setFb('down'); setCm(''); setCmErr(''); }}
+                      className={`flex-1 py-3 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-medium ${fb === 'down' ? 'bg-red-500 border-red-500 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-red-300'}`}>
+                      <ThumbsDown className="w-4 h-4" />{t('pred.no')}
+                    </button>
+                  </div>
+                  {fb && (
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder={fb === 'down' ? t('pred.feedbackReqPh') : t('pred.feedbackOptPh')}
+                        value={cm}
+                        onChange={(e) => { setCm(e.target.value); if (e.target.value.trim()) setCmErr(''); }}
+                        className={`rounded-2xl resize-none text-sm ${cmErr ? 'border-red-400' : 'border-gray-200'}`}
+                        rows={3}
+                      />
+                      {cmErr && <p className="text-xs text-red-500">{cmErr}</p>}
+                      <Button
+                        className="w-full bg-[#2d6a3e] hover:bg-[#1b4228] rounded-2xl font-semibold"
+                        onClick={async () => {
+                          if (fb === 'down' && !cm.trim()) {
+                            setCmErr(t('pred.requiredErr'));
+                            return;
+                          }
+                          try {
+                            const token = localStorage.getItem('mandiq_token');
+                            const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+                            await fetch(`${BASE_URL}/api/prediction/feedback`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                              },
+                              body: JSON.stringify({ crop, market: mkt, accurate: fb === 'up' ? 'yes' : 'no', comment: cm }),
+                            });
+                          } catch { }
+                          setSubmitted(true);
+                        }}
+                      >
+                        {t('pred.submit')}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
         </>}
       </div>
       <BottomNav />
+      <SupportChat />
     </div>
   );
 }

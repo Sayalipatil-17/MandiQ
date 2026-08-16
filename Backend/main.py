@@ -19,6 +19,7 @@ from model_trainer import MandiModelTrainer, safe_format
 from predictor import MandiPredictor
 from database import MandiDB
 from auth import create_access_token, send_otp as _send_otp, decode_access_token
+from firebase_admin import auth as firebase_auth
 from mandiq_cross_mandi import best_market_today, all_commodities
 from apscheduler.schedulers.background import BackgroundScheduler
 import pandas as pd
@@ -90,7 +91,7 @@ async def lifespan(app):
     scheduler.start()
     log.info("Scheduler started: daily scrape at 6AM, weekly train every Sunday 2AM, alert check at 9AM & 6PM")
 
-    # Startup pe check: agar model 7 din se purana hai ya hai hi nahi → train karo
+    # Startup pe check: agar model 1 din se purana hai ya hai hi nahi → train karo
     import time, glob
     models = glob.glob(str(BASE_DIR / "models" / "*.pkl"))
     if models:
@@ -99,7 +100,7 @@ async def lifespan(app):
     else:
         days_old = 999  # koi model nahi → zaroor train karo
 
-    if days_old >= 7:
+    if days_old >= 1:
         log.info(f"Models {days_old:.1f} din purane hain — weekly training shuru...")
         subprocess.Popen([sys.executable, "run_pipeline.py", "--crop", "all"], cwd=str(BASE_DIR))
     else:
@@ -165,6 +166,16 @@ class CreateAlertRequest(BaseModel):
     target_price: float
     direction: str = "above"  # "above" or "below"
 
+class RatingRequest(BaseModel):
+    stars: int
+    feedback: str = ""
+
+class PredFeedbackRequest(BaseModel):
+    crop: str
+    market: str
+    accurate: str  # "yes" or "no"
+    comment: str = ""
+
 
 # ─── Health ────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
@@ -181,6 +192,26 @@ def health():
 
 
 # ─── Auth ──────────────────────────────────────────────────────────────────────
+class FirebaseVerifyRequest(BaseModel):
+    firebase_token: str
+    role: str = "farmer"
+
+@app.post("/api/auth/firebase-verify")
+def api_firebase_verify(req: FirebaseVerifyRequest):
+    try:
+        decoded = firebase_auth.verify_id_token(req.firebase_token)
+        phone = decoded.get("phone_number", "")
+        if not phone:
+            raise HTTPException(400, "Phone number nahi mila Firebase token mein")
+        mobile = phone.replace("+91", "").strip()
+        user = db.get_or_create_user(mobile, req.role)
+        token = create_access_token(user["id"])
+        return {"token": token, "user": user}
+    except firebase_auth.InvalidIdTokenError:
+        raise HTTPException(401, "Invalid Firebase token")
+    except Exception as e:
+        raise HTTPException(500, f"Firebase verify failed: {e}")
+
 @app.post("/api/auth/send-otp")
 def api_send_otp(req: SendOtpRequest):
     if len(req.mobile) != 10 or not req.mobile.isdigit():
@@ -450,6 +481,35 @@ def api_delete_alert(alert_id: int, authorization: Optional[str] = Header(None))
 def api_check_alerts(background_tasks: BackgroundTasks):
     background_tasks.add_task(_check_all_alerts)
     return {"status": "checking"}
+
+
+# ─── Prediction Feedback ───────────────────────────────────────────────────────
+@app.post("/api/prediction/feedback")
+def api_prediction_feedback(req: PredFeedbackRequest, authorization: Optional[str] = Header(None)):
+    if req.accurate not in ("yes", "no"):
+        raise HTTPException(400, "accurate must be 'yes' or 'no'")
+    user_id = None
+    if authorization:
+        user_id = decode_access_token(authorization.split(" ")[-1])
+    db.save_prediction_feedback(user_id, req.crop, req.market, req.accurate, req.comment)
+    return {"status": "saved"}
+
+
+# ─── App Ratings ───────────────────────────────────────────────────────────────
+@app.post("/api/rating")
+def api_save_rating(req: RatingRequest, authorization: Optional[str] = Header(None)):
+    if not (1 <= req.stars <= 5):
+        raise HTTPException(400, "stars must be between 1 and 5")
+    user_id = None
+    if authorization:
+        user_id = decode_access_token(authorization.split(" ")[-1])
+    db.save_rating(user_id, req.stars, req.feedback)
+    return {"status": "saved"}
+
+@app.get("/api/rating/stats")
+def api_rating_stats():
+    return db.get_rating_stats()
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

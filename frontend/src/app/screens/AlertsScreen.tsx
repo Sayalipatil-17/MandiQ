@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Bell, Target, TrendingUp, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
+import { SupportChat } from '../components/SupportChat';
 import { useT, cropName } from '../../i18n';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -26,6 +27,8 @@ export function AlertsScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
+  const [bestDay, setBestDay] = useState(() => localStorage.getItem('bestDayAlert') === 'on');
+  const [notifDenied, setNotifDenied] = useState(false);
 
   useEffect(() => { loadAlerts(); }, []);
 
@@ -73,9 +76,9 @@ export function AlertsScreen() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto">
+    <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#1e5631] via-[#2d6a3e] to-[#16a34a] px-6 pt-8 pb-6 rounded-b-[2rem] shadow-lg">
+      <div className="mq-header px-6 pt-10 pb-6 rounded-b-[2.5rem]">
         <div className="flex items-center gap-3">
           <button onClick={() => nav('/home')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-white" />
@@ -165,18 +168,50 @@ export function AlertsScreen() {
           )}
         </div>
 
-        {/* Best Day Alert Info */}
+        {/* Best Day Alert — with toggle */}
         <div className="bg-gradient-to-br from-[#fff7ed] to-white rounded-3xl p-5 border border-[#f97316]/20 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-11 h-11 bg-[#fff7ed] rounded-2xl flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-[#f97316]" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-semibold text-gray-800">{t('alerts.bestDayTitle')}</p>
-              <p className="text-xs text-gray-400">{t('alerts.bestDayOff')}</p>
+              <p className={`text-xs font-medium ${bestDay ? 'text-[#f97316]' : 'text-gray-400'}`}>
+                {bestDay ? t('alerts.bestDayOn') : t('alerts.bestDayOff')}
+              </p>
             </div>
+            <button
+              onClick={async () => {
+                if (bestDay) {
+                  setBestDay(false);
+                  localStorage.setItem('bestDayAlert', 'off');
+                  setNotifDenied(false);
+                } else {
+                  if ('Notification' in window) {
+                    const perm = await Notification.requestPermission();
+                    if (perm === 'granted') {
+                      setBestDay(true);
+                      localStorage.setItem('bestDayAlert', 'on');
+                      setNotifDenied(false);
+                      new Notification('MandiQ 🌾', { body: t('alerts.bestDayOn') + ' — Best Day Alert' });
+                    } else {
+                      setNotifDenied(true);
+                    }
+                  } else {
+                    setBestDay(true);
+                    localStorage.setItem('bestDayAlert', 'on');
+                  }
+                }
+              }}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${bestDay ? 'bg-[#f97316]' : 'bg-gray-200'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${bestDay ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
           </div>
-          <p className="text-xs text-gray-500">{t('alerts.step3')}</p>
+          <p className="text-xs text-gray-500">{t('alerts.bestDayDesc')}</p>
+          {notifDenied && (
+            <p className="text-xs text-red-500 mt-2">⚠️ {t('alerts.notifDenied')}</p>
+          )}
         </div>
 
         {/* My Alerts */}
@@ -222,6 +257,7 @@ export function AlertsScreen() {
         </div>
       </div>
       <BottomNav />
+      <SupportChat />
     </div>
   );
 }

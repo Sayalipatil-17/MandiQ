@@ -47,8 +47,8 @@ export function MandiCompareScreen() {
   const bestMandi = mandis.find(m => m.isBest);
 
   return (
-    <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto">
-      <div className="bg-gradient-to-br from-[#1e5631] via-[#2d6a3e] to-[#16a34a] px-6 pt-8 pb-6 rounded-b-[2rem] shadow-lg">
+    <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
+      <div className="mq-header px-6 pt-10 pb-6 rounded-b-[2.5rem]">
         <div className="flex items-center gap-3 mb-3">
           <button onClick={() => nav('/home')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-white" />

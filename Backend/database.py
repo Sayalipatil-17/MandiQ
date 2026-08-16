@@ -91,6 +91,24 @@ class MandiDB:
                     created_at      TEXT    DEFAULT (datetime('now')),
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
+
+                CREATE TABLE IF NOT EXISTS prediction_feedback (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id         INTEGER,
+                    crop            TEXT    NOT NULL,
+                    market          TEXT    NOT NULL,
+                    accurate        TEXT    NOT NULL CHECK(accurate IN ('yes','no')),
+                    comment         TEXT    DEFAULT '',
+                    created_at      TEXT    DEFAULT (datetime('now'))
+                );
+
+                CREATE TABLE IF NOT EXISTS app_ratings (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id     INTEGER,
+                    stars       INTEGER NOT NULL CHECK(stars BETWEEN 1 AND 5),
+                    feedback    TEXT    DEFAULT '',
+                    created_at  TEXT    DEFAULT (datetime('now'))
+                );
             """)
         log.info(f"DB ready: {self.db_path}")
     def get_or_create_user(self, mobile: str, role: str = 'farmer') -> dict:
@@ -354,6 +372,32 @@ class MandiDB:
                 "UPDATE price_alerts SET triggered = 1, triggered_at = datetime('now') WHERE id = ?",
                 (alert_id,)
             )
+
+    # ─── Prediction Feedback ─────────────────────────────────────────────────
+    def save_prediction_feedback(self, user_id, crop: str, market: str, accurate: str, comment: str = "") -> int:
+        with self._conn() as con:
+            cur = con.execute(
+                "INSERT INTO prediction_feedback (user_id, crop, market, accurate, comment) VALUES (?,?,?,?,?)",
+                (user_id, crop, market, accurate, comment)
+            )
+            return cur.lastrowid
+
+    # ─── App Ratings ─────────────────────────────────────────────────────────
+    def save_rating(self, user_id: int, stars: int, feedback: str = "") -> int:
+        with self._conn() as con:
+            cur = con.execute(
+                "INSERT INTO app_ratings (user_id, stars, feedback) VALUES (?,?,?)",
+                (user_id, stars, feedback)
+            )
+            return cur.lastrowid
+
+    def get_rating_stats(self) -> dict:
+        with self._conn() as con:
+            row = con.execute("""
+                SELECT COUNT(*) as total, ROUND(AVG(stars), 1) as avg_stars
+                FROM app_ratings
+            """).fetchone()
+        return dict(row) if row else {"total": 0, "avg_stars": 0}
 
     # ─── Cross-Mandi ──────────────────────────────────────────────────────────
     def get_commodity_data_all_markets(self, commodity: str) -> List[Dict]:

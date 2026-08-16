@@ -34,6 +34,8 @@ import datetime as dt
 import requests
 import pandas as pd
 
+from captcha_solver import get_solved_captcha, report_bad_captcha
+
 # ─── CONFIG ───────────────────────────────────────────────────────────────── #
 
 API_URL = "https://api.agmarknet.gov.in/v1/daily-price-arrival/report"
@@ -45,12 +47,12 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 }
 
-# Commodity IDs (add Onion/Spinach IDs when discovered)
+# Commodity IDs
 CROPS = {
     "Tomato":  "65",
     "Potato":  "24",
-    # "Onion":   "XX",   # TODO: find commodity ID
-    # "Spinach": "XX",   # TODO: find commodity ID
+    "Onion":   "23",
+    "Spinach": "290",
 }
 
 # Market name matching (API response name → our label)
@@ -130,22 +132,45 @@ def fetch_crop(crop_name, commodity_id, from_date, to_date):
     all_rows = []
     page = 1
     max_pages = 100
+    captcha_retries = 0
+    max_captcha_retries = 3
 
     print(f"  [{crop_name}] Fetching {from_date} → {to_date} ...", end=" ")
 
     while page <= max_pages:
         body["page"] = str(page)
+
+        # Each request needs a fresh, freshly-solved captcha (single-use key)
+        try:
+            captcha_key, captcha_answer, captcha_id = get_solved_captcha()
+        except Exception as e:
+            print(f"\n  ERROR solving captcha: {e}")
+            break
+        body["captcha_key"] = captcha_key
+        body["captcha"] = captcha_answer
+
         try:
             r = requests.post(API_URL, json=body, headers=HEADERS, timeout=90)
-            r.raise_for_status()
             js = r.json()
         except Exception as e:
             print(f"\n  ERROR page {page}: {e}")
             break
 
+        # Wrong captcha solve — retry with a fresh one instead of aborting
+        if js.get("code") in ("TOKEN_OR_CAPTCHA_REQUIRED", "INVALID_CAPTCHA"):
+            captcha_retries += 1
+            report_bad_captcha(captcha_id)
+            if captcha_retries <= max_captcha_retries:
+                print(f"\n  [captcha] rejected, reporting bad + retrying ({captcha_retries}/{max_captcha_retries})...", end=" ")
+                continue
+            print(f"\n  ERROR: captcha rejected {max_captcha_retries} times, giving up")
+            break
+
         if not js.get("status"):
             print(f"\n  API error: {js.get('message', 'unknown')}")
             break
+
+        captcha_retries = 0
 
         data = js.get("data", {})
         for rec in data.get("records", []):

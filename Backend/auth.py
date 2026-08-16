@@ -9,6 +9,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 from database import MandiDB
 
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
+
+# Firebase Admin SDK initialize karo
+BASE_DIR_FB = Path(__file__).resolve().parent
+_fb_cred_path = BASE_DIR_FB / "firebase-service-account.json"
+if not firebase_admin._apps and _fb_cred_path.exists():
+    cred = credentials.Certificate(str(_fb_cred_path))
+    firebase_admin.initialize_app(cred)
+
 
 log = logging.getLogger("mandiq.auth")
 
@@ -66,29 +76,29 @@ def _get_api_key() -> str:
     return os.environ.get("FAST2SMS_API_KEY", "")
 
 def send_otp(mobile_number: str, otp: str) -> bool:
-    """Send OTP via 2Factor.in API."""
+    """Send OTP via 2Factor.in — no DLT needed, works immediately."""
     import requests
+
     api_key = os.environ.get("TWOFACTOR_API_KEY", "")
     if not api_key:
-        print(f"\n========================================")
-        print(f" OTP for +91 {mobile_number}: {otp}")
-        print(f" [2Factor key not set — console fallback]")
-        print(f"========================================\n")
+        print(f"\n{'='*50}\n  📱 OTP for +91 {mobile_number}: {otp}\n  [TWOFACTOR_API_KEY not set]\n{'='*50}\n")
         return False
+
     try:
-        url = f"https://2factor.in/API/V1/{api_key}/SMS/{mobile_number}/{otp}/MandiQ_OTP"
+        url = f"https://2factor.in/API/V1/{api_key}/SMS/{mobile_number}/{otp}"
         resp = requests.get(url, timeout=10)
         data = resp.json()
+        log.info(f"2Factor response: {data}")
         if data.get("Status") == "Success":
-            log.info(f"OTP SMS sent to {mobile_number} via 2Factor")
+            log.info(f"✓ OTP sent to +91 {mobile_number} via 2Factor")
             return True
-        log.warning(f"2Factor OTP error: {data}")
-        print(f"\n OTP for +91 {mobile_number}: {otp} [SMS failed: {data}]\n")
-        return False
+        log.warning(f"2Factor failed: {data}")
     except Exception as e:
-        log.error(f"OTP SMS failed: {e}")
-        print(f"\n OTP for +91 {mobile_number}: {otp} [Exception: {e}]\n")
-        return False
+        log.error(f"2Factor exception: {e}")
+
+    # Console fallback
+    print(f"\n{'='*50}\n  📱 OTP for +91 {mobile_number}: {otp}\n  [SMS failed — use this]\n{'='*50}\n")
+    return False
 
 
 def send_sms(mobile_number: str, message: str) -> bool:

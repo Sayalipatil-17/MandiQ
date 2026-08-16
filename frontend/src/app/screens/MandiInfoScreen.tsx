@@ -49,9 +49,9 @@ export function MandiInfoScreen() {
   const selectedMandiObj = MARKETS.find(m => m.value === selectedMarket) || MARKETS[0];
 
   return (
-    <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto">
+    <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#1e5631] via-[#2d6a3e] to-[#16a34a] px-6 pt-8 pb-6 rounded-b-[2rem] shadow-lg">
+      <div className="mq-header px-6 pt-10 pb-6 rounded-b-[2.5rem]">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => nav('/home')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-white" />
@@ -87,7 +87,7 @@ export function MandiInfoScreen() {
             <p className="text-sm text-gray-500 mb-3">{selectedMandiObj.emoji} {selectedMandiObj.label} — {t('info.todayPrices')}</p>
             <div className="space-y-3">
               {rows.map(c => (
-                <div key={c.name} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
+                <div key={c.name} className="mq-card p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[#f0fdf4] rounded-2xl flex items-center justify-center text-2xl">{c.emoji}</div>
                     <div>
