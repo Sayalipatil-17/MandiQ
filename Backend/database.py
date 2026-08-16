@@ -528,6 +528,7 @@ class MandiMongoDB:
             user = {
                 "id": seq,
                 "mobile_number": mobile_number,
+                "mobile": mobile_number,  # Satisfy the legacy mobile_1 unique index in MongoDB Atlas
                 "name": None,
                 "user_type": None,
                 "is_verified": 1,
