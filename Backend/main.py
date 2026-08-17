@@ -38,7 +38,6 @@ log = logging.getLogger("mandiq")
 
 def _check_all_alerts():
     """Har 9AM aur 6PM: check karo kisi ka alert trigger hua ya nahi."""
-    from auth import send_sms
     alerts = db.get_all_active_alerts()
     checked: dict = {}
     for alert in alerts:
@@ -61,13 +60,9 @@ def _check_all_alerts():
         triggered = (direction == "above" and current_price >= target) or \
                     (direction == "below" and current_price <= target)
         if triggered:
-            crop_name = {"Tomato": "Tamatar", "Potato": "Aloo", "Onion": "Pyaz", "Spinach": "Palak"}.get(alert["crop"], alert["crop"])
-            msg = (f"MandiQ Alert! {crop_name} ka bhav {alert['market']} mein "
-                   f"Rs {int(current_price)}/quintal ho gaya. "
-                   f"Aapka target Rs {int(target)} tha. Bechne ka sahi samay! - MandiQ App")
-            send_sms(alert["mobile"], msg, cname=cname_val, oid=int(target))
+            # In-app notifications only: do not send SMS for price alerts
             db.mark_alert_triggered(alert["id"])
-            log.info(f"Alert triggered & SMS sent: {alert['crop']} @ {alert['market']} = {current_price}")
+            log.info(f"Alert triggered & stored in-app: {alert['crop']} @ {alert['market']} = {current_price}")
 
 def _daily_scrape():
     """Roz subah 6 baje: sirf aaj ka data scrape karo, train mat karo."""

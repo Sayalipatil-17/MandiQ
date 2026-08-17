@@ -110,7 +110,7 @@ export function AlertsScreen() {
             <p className="text-white/70 text-xs">{t('alerts.subtitle')}</p>
           </div>
           <div className="ml-auto bg-white/20 px-3 py-1.5 rounded-xl">
-            <p className="text-white text-xs font-semibold">📱 SMS</p>
+            <p className="text-white text-xs font-semibold">🔔 In-App</p>
           </div>
         </div>
       </div>
@@ -119,7 +119,7 @@ export function AlertsScreen() {
 
         {/* How it works */}
         <div className="bg-[#e8f5e9] rounded-2xl p-4 border border-[#2d6a3e]/20">
-          <p className="text-xs font-semibold text-[#2d6a3e] mb-2">📱 {t('alerts.howItWorks')}</p>
+          <p className="text-xs font-semibold text-[#2d6a3e] mb-2">🔔 {t('alerts.howItWorks')}</p>
           <div className="space-y-1.5">
             <p className="text-xs text-gray-600">1️⃣ {t('alerts.step1')}</p>
             <p className="text-xs text-gray-600">2️⃣ {t('alerts.step2')}</p>
