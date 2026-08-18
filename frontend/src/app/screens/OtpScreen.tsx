@@ -70,7 +70,7 @@ export function OtpScreen() {
         navigate('/home');
       }
     } catch (e: any) {
-      setError(e.message || 'OTP verification failed. Please try again.');
+      setError(e.message || t('login.otpVerifyError'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export function OtpScreen() {
         setCurrentTestingOtp(res.testing_otp);
       }
     } catch (e: any) {
-      setError('Resending OTP failed. Try again.');
+      setError(t('login.otpResendError'));
     } finally {
       setResending(false);
     }

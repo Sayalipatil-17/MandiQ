@@ -109,9 +109,6 @@ export function AlertsScreen() {
             <h2 className="text-lg font-semibold text-white">{t('alerts.title')}</h2>
             <p className="text-white/70 text-xs">{t('alerts.subtitle')}</p>
           </div>
-          <div className="ml-auto bg-white/20 px-3 py-1.5 rounded-xl">
-            <p className="text-white text-xs font-semibold">🔔 In-App</p>
-          </div>
         </div>
       </div>
 
@@ -155,11 +152,11 @@ export function AlertsScreen() {
           <p className="text-xs text-gray-400 mb-2">{t('alerts.direction')}</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
             <button onClick={() => setDirection('above')}
-              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'above' ? 'bg-green-600 border-green-600 text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'above' ? 'bg-[#2d6a3e] border-[#2d6a3e] text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
               {t('alerts.above')}
             </button>
             <button onClick={() => setDirection('below')}
-              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'below' ? 'bg-red-500 border-red-500 text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'below' ? 'bg-[#c9183a] border-[#c9183a] text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
               {t('alerts.below')}
             </button>
           </div>

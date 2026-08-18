@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type Lang = 'en' | 'hi' | 'pa' | 'mr';
 type Entry = { en: string; hi: string; pa: string; mr: string };
@@ -52,7 +52,7 @@ const dict: Record<string, Entry> = {
   'onboarding.whoAreYou': { en: 'Choose Your Role', hi: 'आप कौन हैं?', pa: 'ਤੁਸੀਂ ਕੌਣ ਹੋ?', mr: 'तुम्ही कोण आहात?' },
   'onboarding.selectRole': { en: 'Select your correct role', hi: 'अपनी सही पहचान चुनें', pa: 'ਆਪਣੀ ਸਹੀ ਪਛਾਣ ਚੁਣੋ', mr: 'तुमची योग्य भूमिका निवडा' },
   'onboarding.farmerDesc': { en: 'I want to check the market price of my crops', hi: 'मैं अपनी फसल का सही दाम जानना चाहता हूँ', pa: 'ਮੈਂ ਆਪਣੀ ਫਸਲ ਦਾ ਸਹੀ ਭਾਅ ਜਾਣਨਾ ਚਾਹੁੰਦਾ ਹਾਂ', mr: 'मला माझ्या पिकाची योग्य किंमत जाणून घ्यायची आहे' },
-  'onboarding.traderDesc': { en: 'I want to track mandi price movements', hi: 'मैं मंडियों के भाव ट्रैक करना चाहता हूँ', pa: 'ਮੈਂ ਮੰਡੀਆਂ के ਭਾਅ ਟ੍ਰੈਕ ਕਰਨਾ ਚਾਹੁੰਦਾ ਹਾਂ', mr: 'मला मंड्यांमधील भाव ट्रॅक करायचे आहेत' },
+  'onboarding.traderDesc': { en: 'I want to track mandi price movements', hi: 'मैं मंडियों के भाव ट्रैक करना चाहता हूँ', pa: 'ਮੈਂ ਮੰਡੀਆਂ ਦੇ ਭਾਅ ਟਰੈਕ ਕਰਨਾ ਚਾਹੁੰਦਾ ਹਾਂ', mr: 'मला मंड्यांमधील भाव ट्रॅक करायचे आहेत' },
   'onboarding.whatName': { en: 'What is your name?', hi: 'आपका नाम क्या है?', pa: 'ਤੁਹਾਡਾ ਨਾਮ ਕੀ ਹੈ?', mr: 'तुमचे नाव काय आहे?' },
   'onboarding.writeName': { en: 'Write your name here', hi: 'अपना नाम यहाँ लिखें', pa: 'ਆਪਣਾ ਨਾਮ ਇੱਥੇ ਲਿਖੋ', mr: 'तुमचे नाव येथे लिहा' },
   'onboarding.namePlaceholder': { en: 'e.g. Ramesh Kumar', hi: 'जैसे: रमेश कुमार', pa: 'ਜਿਵੇਂ: ਰਮੇਸ਼ ਕੁਮਾਰ', mr: 'उदा: रमेश कुमार' },
@@ -60,7 +60,7 @@ const dict: Record<string, Entry> = {
   'onboarding.locationDesc': { en: 'Select your region so we can show the correct mandi prices', hi: 'अपना क्षेत्र दर्ज करें ताकि हम सही मंडी दिखा सकें', pa: 'ਆਪਣਾ ਖੇਤਰ ਦਰਜ ਕਰੋ ਤਾਂ ਜੋ ਅਸੀਂ ਸਹੀ ਮੰਡੀ ਦਿਖਾ ਸਕੀਏ', mr: 'तुमचा परिसर नोंदवा जेणेकरून आम्ही योग्य मंडी दाखवू शकू' },
   'onboarding.gpsBtn': { en: 'Use my current location (GPS)', hi: 'मेरी वर्तमान स्थिति का उपयोग करें (GPS)', pa: 'ਮੇਰੀ ਮੌਜੂਦਾ ਸਥਿਤੀ ਦੀ ਵਰਤੋਂ ਕਰੋ (GPS)', mr: 'माझे चालू स्थान वापरा (GPS)' },
   'onboarding.gpsSearching': { en: 'Searching location...', hi: 'स्थान खोज रहे हैं...', pa: 'ਸਥਾਨ ਲੱਭ ਰਹੇ ਹਾਂ...', mr: 'स्थान शोधत आहे...' },
-  'onboarding.manualSelect': { en: 'Or select manually', hi: 'या manually चुनें', pa: 'ਜਾਂ ਮੈਨੂਅਲੀ ਚੁਣੋ', mr: 'किंवा मॅन्युअली निवडा' },
+  'onboarding.manualSelect': { en: 'Or select manually', hi: 'या मैन्युअल रूप से चुनें', pa: 'ਜਾਂ ਮੈਨੂਅਲੀ ਚੁਣੋ', mr: 'किंवा मॅन्युअली निवडा' },
   'onboarding.selectState': { en: 'Select state...', hi: 'राज्य चुनें...', pa: 'ਸੂਬਾ ਚੁਣੋ...', mr: 'राज्य निवडा...' },
   'onboarding.districtPlaceholder': { en: 'Enter district (e.g. Meerut)', hi: 'जिला दर्ज करें (जैसे: मेरठ)', pa: 'ਜ਼ਿਲ੍ਹਾ ਦਰਜ ਕਰੋ (ਜਿਵੇਂ: ਮੇਰਠ)', mr: 'जिल्हा नोंदवा (उदा: मेरठ)' },
   'onboarding.villageLabel': { en: 'Village / City (Optional)', hi: 'गांव या शहर (वैकल्पिक)', pa: 'ਪਿੰਡ ਜਾਂ ਸ਼ਹਿਰ (ਵਿਕਲਪਿਕ)', mr: 'गाव किंवा शहर (पर्यायी)' },
@@ -71,7 +71,7 @@ const dict: Record<string, Entry> = {
   'onboarding.otherCropsPlaceholder': { en: 'e.g. Wheat, Mustard', hi: 'जैसे: गेहूं, सरसों', pa: 'ਜਿਵੇਂ: ਕਣਕ, ਸਰ੍ਹੋਂ', mr: 'उदा: गहू, मोहरी' },
   'onboarding.farmSizeLabel': { en: 'Farm Size (In Acres - Optional)', hi: 'खेत का आकार (एकड़ में - वैकल्पिक)', pa: 'ਖੇਤ ਦਾ ਅਕਾਰ (ਏਕੜ ਵਿੱਚ - ਵਿਕਲਪਿਕ)', mr: 'शेतीचा आकार (एकरमध्ये - पर्यायी)' },
   'onboarding.farmSizePlaceholder': { en: 'e.g. 2.5 acres', hi: 'उदाहरण: 2.5 एकड़', pa: 'ਉਦਾਹਰਨ: 2.5 ਏਕੜ', mr: 'उदाहरण: 2.5 एकर' },
-  'onboarding.startApp': { en: 'Start MandiQ', hi: 'MandiQ शुरू करें', pa: 'MandiQ ਸ਼ੁਰੂ ਕਰੋ', mr: 'MandiQ सुरू करा' },
+  'onboarding.startApp': { en: 'Start MandiQ', hi: 'मंडीक्यू शुरू करें', pa: 'ਮੰਡੀਕਿਊ ਸ਼ੁਰੂ ਕਰੋ', mr: 'मंडीक्यू सुरू करा' },
   'alerts.historyTitle': { en: 'Notification History', hi: 'नोटिफिकेशन इतिहास', pa: 'ਨੋਟੀਫਿਕੇਸ਼ਨ ਇਤਿਹਾਸ', mr: 'सूचना इतिहास' },
   'alerts.noHistory': { en: 'No triggered alerts yet', hi: 'अभी तक कोई अलर्ट ट्रिगर नहीं हुआ', pa: 'ਅਜੇ ਤੱਕ ਕੋਈ ਅਲਰਟ ਟ੍ਰਿਗਰ ਨਹੀਂ ਹੋਇਆ', mr: 'अद्याप कोणतीही सूचना ट्रिगर झालेली नाही' },
 
@@ -213,12 +213,12 @@ const dict: Record<string, Entry> = {
   'profile.save':          { en: 'Save', hi: 'सहेजें', pa: 'ਸੰਭਾਲੋ', mr: 'जतन करा' },
   'profile.saving':        { en: 'Saving…', hi: 'सहेजा जा रहा है…', pa: 'ਸੰਭਾਲਿਆ ਜਾ ਰਿਹਾ ਹੈ…', mr: 'जतन होत आहे…' },
   'profile.saved':         { en: 'Profile saved!', hi: 'प्रोफाइल सहेज ली गई!', pa: 'ਪ੍ਰੋਫਾਈਲ ਸੰਭਾਲੀ ਗਈ!', mr: 'प्रोफाइल जतन झाली!' },
-  'profile.about':         { en: 'About MandiQ', hi: 'MandiQ के बारे में', pa: 'MandiQ ਬਾਰੇ', mr: 'MandiQ बद्दल' },
-  'profile.aboutSub':      { en: 'App information', hi: 'App की जानकारी', pa: 'App ਦੀ ਜਾਣਕਾਰੀ', mr: 'App माहिती' },
+  'profile.about':         { en: 'About MandiQ', hi: 'मंडीक्यू के बारे में', pa: 'ਮੰਡੀਕਿਊ ਬਾਰੇ', mr: 'मंडीक्यू बद्दल' },
+  'profile.aboutSub':      { en: 'App information', hi: 'ऐप की जानकारी', pa: 'ਐਪ ਦੀ ਜਾਣਕਾਰੀ', mr: 'ॲप माहिती' },
   'profile.rate':          { en: 'Rate us', hi: 'रेटिंग दें', pa: 'ਰੇਟ ਕਰੋ', mr: 'रेट करा' },
   'profile.rateSub':       { en: 'Give feedback', hi: 'फीडबैक दीजिए', pa: 'ਫੀਡਬੈਕ ਦਿਓ', mr: 'अभिप्राय द्या' },
   'profile.version':       { en: 'Version 1.0.0', hi: 'संस्करण 1.0.0', pa: 'ਵਰਜ਼ਨ 1.0.0', mr: 'आवृत्ती 1.0.0' },
-  'profile.aboutDesc':     { en: 'MandiQ is an AI-powered mandi price app that helps farmers and traders make the right decisions at the right time. We use AGMARKNET live data and machine learning to predict prices for the next 7 days.', hi: 'MandiQ एक AI-powered मंडी प्राइस ऐप है जो किसानों और व्यापारियों को सही समय पर सही फैसले लेने में मदद करता है। हम AGMARKNET के लाइव डेटा और मशीन लर्निंग से अगले 7 दिनों की कीमत का अनुमान लगाते हैं।', pa: 'MandiQ ਇੱਕ AI-ਅਧਾਰਿਤ ਮੰਡੀ ਭਾਅ ਐਪ ਹੈ ਜੋ ਕਿਸਾਨਾਂ ਅਤੇ ਵਪਾਰੀਆਂ ਨੂੰ ਸਹੀ ਸਮੇਂ ਤੇ ਸਹੀ ਫੈਸਲੇ ਲੈਣ ਵਿੱਚ ਮਦਦ ਕਰਦਾ ਹੈ।', mr: 'MandiQ हे एक AI-आधारित मंडी किंमत ॲप आहे जे शेतकरी आणि व्यापाऱ्यांना योग्य वेळी योग्य निर्णय घेण्यास मदत करते.' },
+  'profile.aboutDesc':     { en: 'MandiQ is an AI-powered mandi price app that helps farmers and traders make the right decisions at the right time. We use AGMARKNET live data and machine learning to predict prices for the next 7 days.', hi: 'मंडीक्यू एक एआई-संचालित मंडी मूल्य ऐप है जो किसानों और व्यापारियों को सही समय पर सही फैसले लेने में मदद करता है। हम AGMARKNET के लाइव डेटा and मशीन लर्निंग से अगले 7 दिनों की कीमत का अनुमान लगाते हैं।', pa: 'ਮੰਡੀਕਿਊ ਇੱਕ ਏਆਈ-ਆਧਾਰਿਤ ਮੰਡੀ ਭਾਅ ਐਪ ਹੈ ਜੋ ਕਿਸਾਨਾਂ ਅਤੇ ਵਪਾਰੀਆਂ ਨੂੰ ਸਹੀ ਸਮੇਂ ਤੇ ਸਹੀ ਫੈਸਲੇ ਲੈਣ ਵਿੱਚ ਮਦਦ ਕਰਦਾ ਹੈ।', mr: 'मंडीक्यू हे एक एआय-आधारित मंडी किंमत ॲप आहे जे शेतकरी आणि व्यापाऱ्यांना योग्य वेळी योग्य निर्णय घेण्यास मदत करते.' },
   'profile.f1title':       { en: 'AI Price Prediction', hi: 'AI कीमत अनुमान', pa: 'AI ਭਾਅ ਭਵਿੱਖਬਾਣੀ', mr: 'AI किंमत अंदाज' },
   'profile.f1sub':         { en: '7-day forecast, 70–90% accuracy', hi: '7 दिन का पूर्वानुमान, 70–90% सटीकता', pa: '7 ਦਿਨ ਦੀ ਭਵਿੱਖਬਾਣੀ, 70–90% ਸਟੀਕਤਾ', mr: '7 दिवसांचा अंदाज, 70–90% अचूकता' },
   'profile.f2title':       { en: 'Mandi Comparison', hi: 'मंडी तुलना', pa: 'ਮੰਡੀ ਤੁਲਨਾ', mr: 'मंडी तुलना' },
@@ -226,15 +226,15 @@ const dict: Record<string, Entry> = {
   'profile.f3title':       { en: 'Price Alerts', hi: 'कीमत अलर्ट', pa: 'ਭਾਅ ਅਲਰਟ', mr: 'किंमत सूचना' },
   'profile.f3sub':         { en: 'Notification at target price', hi: 'लक्ष्य कीमत पर सूचना', pa: 'ਟੀਚਾ ਭਾਅ ਤੇ ਸੂਚਨਾ', mr: 'लक्ष्य किंमतीवर सूचना' },
   'profile.madeWith':      { en: 'Made with ❤️ for Indian farmers · Data: AGMARKNET', hi: 'भारतीय किसानों के लिए ❤️ · डेटा: AGMARKNET', pa: 'ਭਾਰਤੀ ਕਿਸਾਨਾਂ ਲਈ ❤️ · ਡੇਟਾ: AGMARKNET', mr: 'भारतीय शेतकऱ्यांसाठी ❤️ · डेटा: AGMARKNET' },
-  'profile.rateTitle':     { en: 'Rate the app', hi: 'App को रेट करें', pa: 'App ਨੂੰ ਰੇਟ ਕਰੋ', mr: 'App ला रेट करा' },
-  'profile.feedbackPh':    { en: 'Any suggestion or issue (optional)…', hi: 'कोई सुझाव या समस्या बताएं (optional)…', pa: 'ਕੋਈ ਸੁਝਾਅ ਜਾਂ ਸਮੱਸਿਆ ਦੱਸੋ (optional)…', mr: 'कोणताही सुझाव किंवा समस्या सांगा (optional)…' },
+  'profile.rateTitle':     { en: 'Rate the app', hi: 'ऐप को रेट करें', pa: 'ਐਪ ਨੂੰ ਰੇਟ ਕਰੋ', mr: 'ॲपला रेट करा' },
+  'profile.feedbackPh':    { en: 'Any suggestion or issue (optional)…', hi: 'कोई सुझाव या समस्या बताएं (वैकल्पिक)…', pa: 'ਕੋਈ ਸੁਝਾਅ ਜਾਂ ਸਮੱਸਿਆ ਦੱਸੋ (ਵਿਕਲਪਿਕ)…', mr: 'कोणताही सुझाव किंवा समस्या सांगा (पर्यायी)…' },
   'profile.submitFeedback':{ en: 'Submit Feedback', hi: 'फीडबैक भेजें', pa: 'ਫੀਡਬੈਕ ਭੇਜੋ', mr: 'अभिप्राय पाठवा' },
   'profile.thanks':        { en: 'Thank you!', hi: 'शुक्रिया!', pa: 'ਧੰਨਵਾਦ!', mr: 'धन्यवाद!' },
-  'profile.thanksMsg':     { en: 'Your feedback will help us improve MandiQ.', hi: 'आपका फीडबैक हमें MandiQ को बेहतर बनाने में मदद करेगा।', pa: 'ਤੁਹਾਡਾ ਫੀਡਬੈਕ ਸਾਨੂੰ MandiQ ਨੂੰ ਬਿਹਤਰ ਬਣਾਉਣ ਵਿੱਚ ਮਦਦ ਕਰੇਗਾ।', mr: 'तुमचा अभिप्राय आम्हाला MandiQ सुधारण्यास मदत करेल.' },
+  'profile.thanksMsg':     { en: 'Your feedback will help us improve MandiQ.', hi: 'आपका फीडबैक हमें मंडीक्यू को बेहतर बनाने में मदद करेगा।', pa: 'ਤੁਹਾਡਾ ਫੀਡਬੈਕ ਸਾਨੂੰ ਮੰਡੀਕਿਊ ਨੂੰ ਬਿਹਤਰ ਬਣਾਉਣ ਵਿੱਚ ਮਦਦ ਕਰੇਗਾ।', mr: 'तुमचा अभिप्राय आम्हाला मंडीक्यू सुधारण्यास मदत करेल.' },
 
   // ── ai advice card ──
   'advice.label':        { en: 'AI Advice', hi: 'AI सलाह', pa: 'AI ਸਲਾਹ', mr: 'AI सल्ला' },
-  'advice.tag':          { en: 'MandiQ Advice', hi: 'MandiQ सलाह', pa: 'MandiQ ਸਲਾਹ', mr: 'MandiQ सल्ला' },
+  'advice.tag':          { en: 'MandiQ Advice', hi: 'मंडीक्यू सलाह', pa: 'ਮੰਡੀਕਿਊ ਸਲਾਹ', mr: 'मंडीक्यू सल्ला' },
   'advice.riseVerdict':  { en: 'Prices likely to rise', hi: 'भाव बढ़ने की संभावना है', pa: 'ਭਾਅ ਵਧਣ ਦੀ ਸੰਭਾਵਨਾ ਹੈ', mr: 'भाव वाढण्याची शक्यता आहे' },
   'advice.fallVerdict':  { en: 'Best time to sell is now', hi: 'अभी बेचना सबसे अच्छा है', pa: 'ਹੁਣ ਵੇਚਣਾ ਸਭ ਤੋਂ ਵਧੀਆ ਹੈ', mr: 'आत्ता विकणे सर्वात चांगले आहे' },
   'advice.riseSub':      { en: 'Expected to increase in', hi: 'अगले', pa: 'ਅਗਲੇ', mr: 'पुढील' },
@@ -254,9 +254,9 @@ const dict: Record<string, Entry> = {
   'advice.sellAdvice':   { en: 'Sell today — waiting may reduce your returns.', hi: 'आज ही बेचें — रुकने से भाव गिर सकता है।', pa: 'ਅੱਜ ਹੀ ਵੇਚੋ — ਰੁਕਣ ਨਾਲ ਭਾਅ ਘਟ ਸਕਦਾ ਹੈ।', mr: 'आजच विका — थांबल्याने भाव घसरू शकतो.' },
 
   // ── support chat ──
-  'support.header':    { en: 'MandiQ Support', hi: 'MandiQ सहायता', pa: 'MandiQ ਸਹਾਇਤਾ', mr: 'MandiQ सहाय्य' },
+  'support.header':    { en: 'MandiQ Support', hi: 'मंडीक्यू सहायता', pa: 'ਮੰਡੀਕਿਊ ਸਹਾਇਤਾ', mr: 'मंडीक्यू सहाय्य' },
   'support.subtitle':  { en: 'Always here to help', hi: 'हमेशा हाज़िर हूँ', pa: 'ਹਮੇਸ਼ਾ ਹਾਜ਼ਰ ਹਾਂ', mr: 'नेहमी उपलब्ध' },
-  'support.greeting':  { en: 'Hello! 🙏 I am MandiQ Support. Ask me about mandi prices, crops, predictions or alerts!', hi: 'नमस्ते! 🙏 मैं MandiQ सहायक हूँ। मंडी भाव, फसल, पूर्वानुमान, अलर्ट — कुछ भी पूछें!', pa: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ MandiQ ਸਹਾਇਕ ਹਾਂ। ਮੰਡੀ ਭਾਅ, ਫਸਲ, ਭਵਿੱਖਬਾਣੀ, ਅਲਰਟ — ਕੁਝ ਵੀ ਪੁੱਛੋ!', mr: 'नमस्कार! 🙏 मी MandiQ सहाय्यक आहे. मंडी किंमती, पीक, अंदाज, सूचना — काहीही विचारा!' },
+  'support.greeting':  { en: 'Hello! 🙏 I am MandiQ Support. Ask me about mandi prices, crops, predictions or alerts!', hi: 'नमस्ते! 🙏 मैं मंडीक्यू सहायक हूँ। मंडी भाव, फसल, पूर्वानुमान, अलर्ट — कुछ भी पूछें!', pa: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ ਮੰਡੀਕਿਊ ਸਹਾਇਕ ਹਾਂ। ਮੰਡੀ ਭਾਅ, ਫਸਲ, ਭਵਿੱਖਬਾਣੀ, ਅਲਰਟ — ਕੁਝ ਵੀ ਪੁੱਛੋ!', mr: 'नमस्कार! 🙏 मी मंडीक्यू सहाय्यक आहे. मंडी किंमती, पीक, अंदाज, सूचना — काहीही विचारा!' },
   'support.placeholder':{ en: 'Ask anything…', hi: 'कुछ भी पूछें…', pa: 'ਕੁਝ ਵੀ ਪੁੱਛੋ…', mr: 'काहीही विचारा…' },
   'support.noAnswer':  { en: "Sorry, I don't have an answer for this. Please contact our support team:", hi: 'माफ करें, इस सवाल का जवाब मेरे पास नहीं है। हमारी सपोर्ट टीम से संपर्क करें:', pa: 'ਮਾਫ਼ ਕਰਨਾ, ਇਸ ਸਵਾਲ ਦਾ ਜਵਾਬ ਮੇਰੇ ਕੋਲ ਨਹੀਂ। ਸਹਾਇਤਾ ਟੀਮ ਨਾਲ ਸੰਪਰਕ ਕਰੋ:', mr: 'माफ करा, या प्रश्नाचे उत्तर माझ्याकडे नाही. सहाय्य टीमशी संपर्क करा:' },
   'support.voiceOn':   { en: 'Turn on voice', hi: 'आवाज़ चालू करें', pa: 'ਆਵਾਜ਼ ਚਾਲੂ ਕਰੋ', mr: 'आवाज सुरू करा' },
@@ -264,15 +264,82 @@ const dict: Record<string, Entry> = {
   'support.mic':       { en: 'Speak to ask', hi: 'बोलकर पूछें', pa: 'ਬੋਲ ਕੇ ਪੁੱਛੋ', mr: 'बोलून विचारा' },
   'support.micStop':   { en: 'Stop listening', hi: 'सुनना बंद करें', pa: 'ਸੁਣਨਾ ਬੰਦ ਕਰੋ', mr: 'ऐकणे थांबवा' },
   'support.s1':        { en: 'How to check price?', hi: 'कीमत कैसे देखें?', pa: 'ਭਾਅ ਕਿਵੇਂ ਦੇਖੀਏ?', mr: 'किंमत कशी पाहावी?' },
-  'support.s2':        { en: 'What is Prediction?', hi: 'Prediction क्या है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕੀ ਹੈ?', mr: 'अंदाज म्हणजे काय?' },
-  'support.s3':        { en: 'How to set Alert?', hi: 'Alert कैसे सेट करें?', pa: 'ਅਲਰਟ ਕਿਵੇਂ ਸੈੱਟ ਕਰੀਏ?', mr: 'सूचना कशी सेट करावी?' },
-  'support.s4':        { en: 'Is the app free?', hi: 'App मुफ़्त है?', pa: 'App ਮੁਫ਼ਤ ਹੈ?', mr: 'App मोफत आहे?' },
+  'support.s2':        { en: 'What is Prediction?', hi: 'पूर्वानुमान क्या है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕੀ ਹੈ?', mr: 'अंदाज म्हणजे काय?' },
+  'support.s3':        { en: 'How to set Alert?', hi: 'अलर्ट कैसे सेट करें?', pa: 'ਅਲਰਟ ਕਿਵੇਂ ਸੈੱਟ ਕਰੀਏ?', mr: 'सूचना कशी सेट करावी?' },
+  'support.s4':        { en: 'Is the app free?', hi: 'क्या ऐप मुफ़्त है?', pa: 'ਕੀ ਐਪ ਮੁਫ਼ਤ ਹੈ?', mr: 'ॲप मोफत आहे का?' },
 
   // ── crops ──
   'crops.tomato':  { en: 'Tomato', hi: 'टमाटर', pa: 'ਟਮਾਟਰ', mr: 'टोमॅटो' },
   'crops.potato':  { en: 'Potato', hi: 'आलू', pa: 'ਆਲੂ', mr: 'बटाटा' },
   'crops.onion':   { en: 'Onion', hi: 'प्याज', pa: 'ਪਿਆਜ਼', mr: 'कांदा' },
   'crops.spinach': { en: 'Spinach', hi: 'पालक', pa: 'ਪਾਲਕ', mr: 'पालक' },
+  'crops.cauliflower': { en: 'Cauliflower', hi: 'फूलगोभी', pa: 'ਫੂਲਗੋਭੀ', mr: 'फ्लॉवर' },
+  'crops.mango':   { en: 'Mango', hi: 'आम', pa: 'ਅੰਬ', mr: 'आंबा' },
+  'crops.apple':   { en: 'Apple', hi: 'सेब', pa: 'ਸੇਬ', mr: 'सफरचंद' },
+  'crops.wheat':   { en: 'Wheat', hi: 'गेहूँ', pa: 'ਕਣਕ', mr: 'गहू' },
+  'crops.rice':    { en: 'Rice', hi: 'चावल', pa: 'ਚੌਲ', mr: 'तांदूळ' },
+
+  'crops.category.all':        { en: 'All', hi: 'सभी', pa: 'ਸਭ', mr: 'सर्व' },
+  'crops.category.vegetables': { en: 'Veggies', hi: 'सब्जियां', pa: 'ਸਬਜ਼ੀਆਂ', mr: 'भाज्या' },
+  'crops.category.fruits':     { en: 'Fruits', hi: 'फल', pa: 'ਫਲ', mr: 'ਫळे' },
+  'crops.category.grains':     { en: 'Grains', hi: 'अनाज', pa: 'ਅਨਾਜ', mr: 'धान्य' },
+
+  'crops.shelflife.tomato':      { en: '5-7 days', hi: '5-7 दिन', pa: '5-7 ਦਿਨ', mr: '5-7 दिवस' },
+  'crops.shelflife.potato':      { en: '15-20 days', hi: '15-20 दिन', pa: '15-20 ਦਿਨ', mr: '15-20 दिवस' },
+  'crops.shelflife.onion':       { en: '20-30 days', hi: '20-30 दिन', pa: '20-30 ਦਿਨ', mr: '20-30 दिवस' },
+  'crops.shelflife.spinach':     { en: '2-4 days', hi: '2-4 दिन', pa: '2-4 ਦਿਨ', mr: '2-4 दिवस' },
+  'crops.shelflife.cauliflower': { en: '7-10 days', hi: '7-10 दिन', pa: '7-10 ਦਿਨ', mr: '7-10 दिवस' },
+  'crops.shelflife.mango':       { en: '3-5 days', hi: '3-5 दिन', pa: '3-5 ਦਿਨ', mr: '3-5 दिवस' },
+  'crops.shelflife.apple':       { en: '15-30 days', hi: '15-30 दिन', pa: '15-30 ਦਿਨ', mr: '15-30 दिवस' },
+  'crops.shelflife.wheat':       { en: '6-12 months', hi: '6-12 महीने', pa: '6-12 ਮਹੀਨੇ', mr: '6-12 महिने' },
+  'crops.shelflife.rice':        { en: '6-12 months', hi: '6-12 महीने', pa: '6-12 ਮਹੀਨੇ', mr: '6-12 महिने' },
+
+  'crops.seasonal': { en: 'Seasonal', hi: 'मौसमी', pa: 'ਮੌਸਮੀ', mr: 'हंगामी' },
+  'crops.soon':     { en: 'Soon', hi: 'जल्द ही', pa: 'ਜਲਦੀ ਹੀ', mr: 'लवकरच' },
+  'common.best':    { en: 'Best', hi: 'सर्वश्रेष्ठ', pa: 'ਸਭ ਤੋਂ ਵਧੀਆ', mr: 'सर्वोत्तम' },
+  'common.est':     { en: 'Est.', hi: 'अनु.', pa: 'ਅਨੁ.', mr: 'अंदा.' },
+
+  'state.delhi':         { en: 'Delhi', hi: 'दिल्ली', pa: 'ਦਿੱਲੀ', mr: 'दिल्ली' },
+  'state.haryana':       { en: 'Haryana', hi: 'हरियाणा', pa: 'ਹਰਿਆਣਾ', mr: 'हरियाणा' },
+  'state.punjab':        { en: 'Punjab', hi: 'पंजाब', pa: 'ਪੰਜਾਬ', mr: 'पंजाब' },
+  'state.uttarpradesh':  { en: 'Uttar Pradesh', hi: 'उत्तर प्रदेश', pa: 'ਉੱਤਰ ਪ੍ਰਦੇਸ਼', mr: 'उत्तर प्रदेश' },
+  'state.rajasthan':     { en: 'Rajasthan', hi: 'राजस्थान', pa: 'ਰਾਜਸਥਾਨ', mr: 'राजस्थान' },
+  'state.madhyapradesh': { en: 'Madhya Pradesh', hi: 'मध्य प्रदेश', pa: 'ਮੱਧ ਪ੍ਰਦੇਸ਼', mr: 'मध्य प्रदेश' },
+  'state.maharashtra':   { en: 'Maharashtra', hi: 'महाराष्ट्र', pa: 'ਮਹਾਰਾਸ਼ਟਰ', mr: 'महाराष्ट्र' },
+  'state.gujarat':       { en: 'Gujarat', hi: 'गुजरात', pa: 'ਗੁਜਰਾਤ', mr: 'गुजरात' },
+  'state.bihar':         { en: 'Bihar', hi: 'बिहार', pa: 'ਬਿਹਾਰ', mr: 'बिहार' },
+  'state.karnataka':     { en: 'Karnataka', hi: 'कर्नाटक', pa: 'ਕਰਨਾਟਕ', mr: 'कर्नाटक' },
+
+  'mandi.azadpur':   { en: 'Azadpur Mandi', hi: 'आजादपुर मंडी', pa: 'ਆਜ਼ਾਦਪੁਰ ਮੰਡੀ', mr: 'आझादपूर मंडी' },
+  'mandi.keshopur':  { en: 'Keshopur Mandi', hi: 'केशोपुर मंडी', pa: 'ਕੇਸ਼ੋਪੁਰ ਮੰਡੀ', mr: 'केशोपूर मंडी' },
+  'mandi.shahdara':  { en: 'Shahdara Mandi', hi: 'शाहदरा मंडी', pa: 'ਸ਼ਾਹਦਰਾ ਮੰਡੀ', mr: 'शाहदरा मंडी' },
+  'mandi.azadpur.short':   { en: 'Azadpur', hi: 'आजादपुर', pa: 'ਆਜ਼ਾਦਪੁਰ', mr: 'आझादपूर' },
+  'mandi.keshopur.short':  { en: 'Keshopur', hi: 'केशोपुर', pa: 'ਕੇਸ਼ੋਪੁਰ', mr: 'केशोपूर' },
+  'mandi.shahdara.short':  { en: 'Shahdara', hi: 'शाहदरा', pa: 'ਸ਼ਾਹਦਰਾ', mr: 'शाहदरा' },
+
+  'onboarding.gpsError.unsupported': { en: 'GPS geolocation not supported by your browser.', hi: 'आपके ब्राउज़र द्वारा GPS स्थान-निर्धारण समर्थित नहीं है।', pa: 'ਤੁਹਾਡੇ ਬ੍ਰਾਊਜ਼ਰ ਦੁਆਰਾ GPS ਸਥਾਨ-ਨਿਰਧਾਰਨ ਸਮਰਥਿਤ ਨਹੀਂ ਹੈ।', mr: 'तुमच्या ब्राउझरद्वारे GPS स्थान-निर्धारण समर्थित नाही.' },
+  'onboarding.gpsError.fetchFailed': { en: 'Could not fetch address details from GPS.', hi: 'GPS से पते का विवरण प्राप्त नहीं किया जा सका।', pa: 'GPS ਤੋਂ ਪਤੇ ਦਾ ਵੇਰਵਾ ਪ੍ਰਾਪਤ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ।', mr: 'GPS कडून पत्त्याचा तपशील मिळवता आला नाही.' },
+  'onboarding.gpsError.network':     { en: 'Network error fetching address from coordinates.', hi: 'निर्देशांकों से पता प्राप्त करने में नेटवर्क त्रुटि।', pa: 'ਨਿਰਦੇਸ਼ਾਂਕ ਤੋਂ ਪਤਾ ਪ੍ਰਾਪਤ ਕਰਨ ਵਿੱਚ ਨੈੱਟਵਰਕ ਸਮੱਸਿਆ।', mr: 'निर्देशांकांवरून पत्ता मिळवण्यात नेटवर्क त्रुटी.' },
+  'onboarding.gpsError.denied':      { en: 'GPS permission denied. Please allow location access.', hi: 'GPS अनुमति अस्वीकृत। कृपया स्थान पहुंच की अनुमति दें।', pa: 'GPS ਇਜਾਜ਼ਤ ਅਸਵੀਕਾਰ ਕੀਤੀ ਗਈ। ਕਿਰਪา ਕਰਕੇ ਲੋਕੇਸ਼ਨ ਪਹੁੰਚ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ।', mr: 'GPS परवानगी नाकारली. कृपया स्थान प्रवेशाची परवानगी द्या.' },
+  'onboarding.gpsError.weak':        { en: 'GPS signal weak or unavailable. Select manually.', hi: 'GPS सिग्नल कमजोर या अनुपलब्ध है। मैन्युअल रूप से चुनें।', pa: 'GPS ਸਿਗਨल ਕਮਜ਼ੋਰ ਜਾਂ ਉਪਲਬਧ ਨਹੀਂ ਹੈ। ਮੈਨੂਅਲੀ ਚੁਣੋ।', mr: 'GPS सिग्नल कमकुवत किंवा अनुपलब्ध आहे. मॅन्युअली निवडा.' },
+
+  'login.otpVerifyError': { en: 'OTP verification failed. Please try again.', hi: 'OTP सत्यापन विफल रहा। कृपया पुनः प्रयास करें।', pa: 'OTP ਪੁਸ਼ਟੀਕਰਨ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', mr: 'OTP पडताळणी अयशस्वी. कृपया पुन्हा प्रयत्न करा.' },
+  'login.otpResendError': { en: 'Resend OTP failed. Try again.', hi: 'OTP दोबारा भेजना विफल रहा। फिर प्रयास करें।', pa: 'OTP ਦੁਬਾਰਾ ਭੇਜਣਾ ਅਸਫਲ ਰਿਹਾ। ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', mr: 'OTP पुन्हा पाठवणे अयशस्वी. पुन्हा प्रयत्न करा.' },
+  'login.otpSendError':   { en: 'OTP sending failed. Please check mobile number.', hi: 'OTP भेजना विफल रहा। कृपया मोबाइल नंबर जांचें।', pa: 'OTP ਭੇਜਣਾ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਮੋਬਾਈਲ ਨੰਬਰ ਦੀ ਜਾਂਚ ਕਰੋ।', mr: 'OTP पाठवणे अयशस्वी. कृपया मोबाईल नंबर तपासा.' },
+
+  'pred.subtitle':         { en: 'AI-powered price forecast', hi: 'एआई-आधारित मूल्य पूर्वानुमान', pa: 'ਏਆਈ-ਆਧਾਰਿਤ ਮੁੱਲ ਭਵਿੱਖਬਾਣੀ', mr: 'एआय-आधारित किंमत अंदाज' },
+  'pred.seasonalAnalysis': { en: 'Seasonal market analysis', hi: 'मौसमी बाजार विश्लेषण', pa: 'ਮੌਸਮੀ ਬਾਜ਼ਾਰ ਵਿਸ਼ਲੇਸ਼ਣ', mr: 'हंगामी बाजार विश्लेषण' },
+  'pred.weatherRegion':     { en: 'Producing region + Delhi', hi: 'उत्पादक क्षेत्र + दिल्ली', pa: 'ਉਤਪਾਦਕ ਖੇਤਰ + ਦਿੱਲੀ', mr: 'उत्पादक क्षेत्र + दिल्ली' },
+  'pred.reliability':       { en: 'Model prediction reliability', hi: 'मॉडल पूर्वानुमान विश्वसनीयता', pa: 'ਮਾਡਲ ਪੂਰਵ-ਅਨੁਮਾਨ ਭਰੋਸੇਯੋਗਤਾ', mr: 'मॉडेल अंदाज विश्वासार्हता' },
+  'pred.onDay':             { en: 'on {day}', hi: '{day} को', pa: '{day} ਨੂੰ', mr: '{day} रोजी' },
+  'crops.availableCount':   { en: '{count} crops available', hi: '{count} फसलें उपलब्ध हैं', pa: '{count} ਫਸਲਾਂ ਉਪਲਬਧ ਹਨ', mr: '{count} पिके उपलब्ध आहेत' },
+  'pred.upperBound':       { en: 'Upper bound', hi: 'उच्च सीमा', pa: 'ਉਪਰਲੀ ਸੀਮਾ', mr: 'उच्च मर्यादा' },
+  'pred.lowerBound':       { en: 'Lower bound', hi: 'निम्न सीमा', pa: 'ਹੇਠਲੀ ਸੀਮਾ', mr: 'निम्न मर्यादा' },
+  'pred.predictedPrice':   { en: 'Predicted Price', hi: 'अनुमानित मूल्य', pa: 'ਅਨੁਮਾਨਿਤ ਮੁੱਲ', mr: 'अंदाजित किंमत' },
+  'mandi.azadpur.desc':    { en: 'Delhi (North)', hi: 'दिल्ली (उत्तर)', pa: 'ਦਿੱਲੀ (ਉੱਤਰ)', mr: 'दिल्ली (उत्तर)' },
+  'mandi.keshopur.desc':   { en: 'Delhi (West)', hi: 'दिल्ली (पश्चिम)', pa: 'ਦਿੱਲੀ (ਪੱਛਮ)', mr: 'दिल्ली (पश्चिम)' },
+  'home.moreThanOther':    { en: '+₹{diff} more than other mandi', hi: '+₹{diff} दूसरी मंडी से ज़्यादा', pa: '+₹{diff} ਦੂਜੀ ਮੰਡੀ ਨਾਲੋਂ ਵੱਧ', mr: '+₹{diff} इतर मंडीपेक्षा जास्त' },
+  'common.less':           { en: '-₹{diff} less', hi: '-₹{diff} कम', pa: '-₹{diff} ਘੱਟ', mr: '-₹{diff} कमी' },
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };
@@ -281,6 +348,11 @@ const LangContext = createContext<Ctx>({ lang: 'hi', setLang: () => {}, t: (k) =
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>((localStorage.getItem('lang') as Lang) || 'hi');
   const setLang = (l: Lang) => { setLangState(l); localStorage.setItem('lang', l); };
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   const t = (key: string): string => {
     const entry = dict[key];
     if (!entry) return key;

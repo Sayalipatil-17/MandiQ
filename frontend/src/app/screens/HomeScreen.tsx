@@ -22,10 +22,10 @@ const CROPS = [
   { name: 'Spinach', emoji: '🌿' },
 ];
 
-const MM = [
-  { value: 'Azadpur APMC', key: 'azadpur', emoji: '🏪', transportCost: 120 },
-  { value: 'Keshopur APMC', key: 'keshopur', emoji: '🏬', transportCost: 180 },
-];
+const MANDI_MAP: Record<string, { labelKey: string; sublabelKey: string }> = {
+  'Azadpur APMC': { labelKey: 'mandi.azadpur', sublabelKey: 'mandi.azadpur.desc' },
+  'Keshopur APMC': { labelKey: 'mandi.keshopur', sublabelKey: 'mandi.keshopur.desc' },
+};
 
 function weekday(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -163,7 +163,7 @@ export function HomeScreen() {
   const [userName, setUserName] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
-  const { t } = useT();
+  const { t, lang } = useT();
 
   useEffect(() => {
     const token = localStorage.getItem('mandiq_token');
@@ -314,8 +314,12 @@ export function HomeScreen() {
               <div className="flex items-center gap-2">
                 <span className="text-xl">{selectedMandi.emoji}</span>
                 <div className="text-left">
-                  <p className="text-white font-medium text-sm">{selectedMandi.label}</p>
-                  <p className="text-white/60 text-xs">{selectedMandi.sublabel}</p>
+                  <p className="text-white font-medium text-sm">
+                    {MANDI_MAP[selectedMandi.value] ? t(MANDI_MAP[selectedMandi.value].labelKey) : selectedMandi.label}
+                  </p>
+                  <p className="text-white/60 text-xs">
+                    {MANDI_MAP[selectedMandi.value] ? t(MANDI_MAP[selectedMandi.value].sublabelKey) : selectedMandi.sublabel}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -331,8 +335,12 @@ export function HomeScreen() {
                   className={`w-full px-4 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors ${selectedMarket === mandi.value ? 'bg-[#E6F2EB]' : ''}`}>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${selectedMarket === mandi.value ? 'bg-[#1C4230]/10' : 'bg-gray-100'}`}>{mandi.emoji}</div>
                   <div className="flex-1 text-left">
-                    <p className={`font-medium text-sm ${selectedMarket === mandi.value ? 'text-[#1C4230]' : 'text-gray-800'}`}>{mandi.label}</p>
-                    <p className="text-xs text-gray-400">{mandi.sublabel}</p>
+                    <p className={`font-medium text-sm ${selectedMarket === mandi.value ? 'text-[#1C4230]' : 'text-gray-800'}`}>
+                      {MANDI_MAP[mandi.value] ? t(MANDI_MAP[mandi.value].labelKey) : mandi.label}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {MANDI_MAP[mandi.value] ? t(MANDI_MAP[mandi.value].sublabelKey) : mandi.sublabel}
+                    </p>
                   </div>
                   {selectedMarket === mandi.value && <Check className="w-5 h-5 text-[#1C4230]" />}
                 </button>
@@ -401,12 +409,14 @@ export function HomeScreen() {
                   <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">{t('home.todayPrice')}</p>
                   {searchTime && (
                     <span className="text-xs text-gray-400 ml-1">
-                      · Aaj {searchTime.toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                      · {t('common.today')} {searchTime.toLocaleTimeString(lang === 'pa' ? 'pa-IN' : lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                     </span>
                   )}
                 </div>
                 <p className="text-sm font-bold text-gray-800">
-                  {selectedCropObj?.emoji} {cropName(selectedCrop, t)} · <span className="font-bold text-gray-800">{selectedMandi?.label}</span>
+                  {selectedCropObj?.emoji} {cropName(selectedCrop, t)} · <span className="font-bold text-gray-800">
+                    {selectedMandi && MANDI_MAP[selectedMandi.value] ? t(MANDI_MAP[selectedMandi.value].labelKey) : selectedMandi?.label}
+                  </span>
                 </p>
               </div>
               <div className={`px-3 py-1 rounded-full text-xs flex items-center gap-1 font-semibold ${priceDiff >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
@@ -450,7 +460,7 @@ export function HomeScreen() {
                     <p className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-600'}`}>{day.label}</p>
                     <p className={`text-xs mt-0.5 ${isActive ? 'text-white/80' : 'text-gray-400'}`}>₹{day.price.toLocaleString()}</p>
                     {!day.isActual && (
-                      <span className={`text-[9px] mt-0.5 font-medium ${isActive ? 'text-white/60' : 'text-[#E8692A]'}`}>~अनु.</span>
+                      <span className={`text-[9px] mt-0.5 font-medium ${isActive ? 'text-white/60' : 'text-[#E8692A]'}`}>~{t('common.est')}</span>
                     )}
                   </button>
                 );
@@ -524,17 +534,17 @@ export function HomeScreen() {
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-sm">{m.emoji}</span>
                                     <p className="text-sm font-bold truncate" style={{ color: rankColor.text }}>
-                                      {m.value.replace(' APMC', '')}
+                                      {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}
                                     </p>
                                     {idx === 0 && (
                                       <span className="text-[8px] font-black text-white px-1.5 py-0.5 rounded-full" style={{ background: rankColor.badge }}>
-                                        BEST
+                                        {t('common.best')}
                                       </span>
                                     )}
                                   </div>
                                   {m.change !== 0 && m.price > 0 && (
                                     <p className={`text-[10px] font-semibold mt-0.5 ${m.change > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                      {m.change > 0 ? '▲' : '▼'} ₹{Math.abs(m.change)} kal se
+                                      {m.change > 0 ? '▲' : '▼'} ₹{Math.abs(m.change)} {t('home.fromYesterday')}
                                     </p>
                                   )}
                                 </div>
@@ -543,7 +553,7 @@ export function HomeScreen() {
                                     {m.price > 0 ? `₹${m.price.toLocaleString()}` : '—'}
                                   </p>
                                   {idx > 0 && m.price > 0 && priceDiff > 0 && (
-                                    <p className="text-[9px] text-red-400 font-semibold">-₹{maxPrice - m.price} kam</p>
+                                    <p className="text-[9px] text-red-400 font-semibold">{t('common.less').replace('{diff}', (maxPrice - m.price).toLocaleString())}</p>
                                   )}
                                 </div>
                               </div>
@@ -572,9 +582,9 @@ export function HomeScreen() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">{t('home.bestSell')}</p>
-                            <p className="text-sm font-bold text-white truncate">{best.value.replace(' APMC', ' Mandi')}</p>
+                            <p className="text-sm font-bold text-white truncate">{t(best.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')}</p>
                             {priceDiff > 0 && (
-                              <p className="text-[10px] text-[#7EFFA0] font-semibold">+₹{priceDiff} dusri mandi se zyada</p>
+                              <p className="text-[10px] text-[#7EFFA0] font-semibold">{t('home.moreThanOther').replace('{diff}', priceDiff.toLocaleString())}</p>
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
@@ -661,29 +671,33 @@ export function HomeScreen() {
           <ChartSection forecastOnly={forecastOnly} t={t} />
 
           {/* MANDI JANKARI + PAST TREND */}
-          <div className="grid grid-cols-2 gap-3 mb-2">
+          <div className="grid grid-cols-2 gap-3 mb-2 items-stretch">
             <button onClick={() => navigate('/mandi-info')}
-              className="bg-[#fff7ed] rounded-2xl p-4 border border-[#f97316]/20 flex flex-col items-start gap-2 hover:border-[#f97316]/50 hover:shadow-sm transition-all active:scale-95">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                <Building2 className="w-5 h-5 text-[#f97316]" />
+              className="bg-[#fff7ed] rounded-2xl p-4 border border-[#f97316]/20 flex flex-col items-start justify-between h-full hover:border-[#f97316]/50 hover:shadow-sm transition-all active:scale-95">
+              <div className="flex flex-col items-start gap-2 w-full">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                  <Building2 className="w-5 h-5 text-[#f97316]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 text-left leading-tight">{t('home.mandiInfo')}</p>
+                  <p className="text-xs text-gray-400 text-left mt-0.5 leading-snug">{t('home.allPrices')}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{t('home.mandiInfo')}</p>
-                <p className="text-xs text-gray-400">{t('home.allPrices')}</p>
-              </div>
-              <span className="text-xs text-[#f97316] font-semibold">{t('home.viewBtn')}</span>
+              <span className="text-xs text-[#f97316] font-semibold mt-3">{t('home.viewBtn')}</span>
             </button>
 
             <button onClick={() => navigate('/past-trend')}
-              className="bg-[#f0f7f1] rounded-2xl p-4 border border-[#2d6a3e]/15 flex flex-col items-start gap-2 hover:border-[#2d6a3e]/40 hover:shadow-sm transition-all active:scale-95">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                <TrendingUp className="w-5 h-5 text-[#2d6a3e]" />
+              className="bg-[#f0f7f1] rounded-2xl p-4 border border-[#2d6a3e]/15 flex flex-col items-start justify-between h-full hover:border-[#2d6a3e]/40 hover:shadow-sm transition-all active:scale-95">
+              <div className="flex flex-col items-start gap-2 w-full">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 text-[#2d6a3e]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 text-left leading-tight">{t('trend.title')}</p>
+                  <p className="text-xs text-gray-400 text-left mt-0.5 leading-snug">{t('trend.priceHistory')}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{t('trend.title')}</p>
-                <p className="text-xs text-gray-400">{t('trend.priceHistory')}</p>
-              </div>
-              <span className="text-xs text-[#2d6a3e] font-semibold">{t('home.viewBtn')}</span>
+              <span className="text-xs text-[#2d6a3e] font-semibold mt-3">{t('home.viewBtn')}</span>
             </button>
           </div>
         </div>

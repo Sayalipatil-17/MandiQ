@@ -25,22 +25,22 @@ interface QAEntry {
 const QA: QAEntry[] = [
   {
     keywords: ['free', 'muft', 'payment', 'charge', 'cost', 'fees', 'paisa', 'paise', 'मुफ्त', 'ਮੁਫ਼ਤ', 'मोफत'],
-    question: { en: 'Is the app free?', hi: 'क्या App मुफ़्त है?', pa: 'ਕੀ App ਮੁਫ਼ਤ ਹੈ?', mr: 'App मोफत आहे का?' },
+    question: { en: 'Is the app free?', hi: 'क्या ऐप मुफ़्त है?', pa: 'ਕੀ ਐਪ ਮੁਫ਼ਤ ਹੈ?', mr: 'ॲप मोफत आहे का?' },
     answer: {
       en: 'MandiQ is completely free! No charges for any feature — price check, prediction, alerts, all free.',
-      hi: 'MandiQ बिल्कुल मुफ़्त है! किसी भी फीचर का कोई शुल्क नहीं — कीमत देखना, पूर्वानुमान, अलर्ट, सब मुफ़्त।',
-      pa: 'MandiQ ਬਿਲਕੁਲ ਮੁਫ਼ਤ ਹੈ! ਕਿਸੇ ਵੀ ਫੀਚਰ ਲਈ ਕੋਈ ਖਰਚਾ ਨਹੀਂ — ਭਾਅ ਜਾਂਚ, ਭਵਿੱਖਬਾਣੀ, ਅਲਰਟ, ਸਭ ਮੁਫ਼ਤ।',
-      mr: 'MandiQ पूर्णपणे मोफत आहे! कोणत्याही वैशिष्ट्यासाठी शुल्क नाही — किंमत तपासणी, अंदाज, सूचना, सर्व मोफत.',
+      hi: 'मंडीक्यू बिल्कुल मुफ़्त है! किसी भी फीचर का कोई शुल्क नहीं — कीमत देखना, पूर्वानुमान, अलर्ट, सब मुफ़्त।',
+      pa: 'ਮੰਡੀਕਿਊ ਬਿਲਕੁਲ ਮੁਫ਼ਤ ਹੈ! ਕਿਸੇ ਵੀ ਫੀਚਰ ਲਈ ਕੋਈ ਖਰਚਾ ਨਹੀਂ — ਭਾਅ ਜਾਂਚ, ਭਵਿੱਖਬਾਣੀ, ਅਲਰਟ, ਸਭ ਮੁਫ਼ਤ।',
+      mr: 'मंडीक्यू पूर्णपणे मोफत आहे! कोणत्याही वैशिष्ट्यासाठी शुल्क नाही — किंमत तपासणी, अंदाज, सूचना, सर्व मोफत.',
     },
   },
   {
     keywords: ['mandiq', 'kya hai', 'what is', 'क्या है', 'ਕੀ ਹੈ', 'ke baare', 'about', 'काय आहे'],
-    question: { en: 'What is MandiQ?', hi: 'MandiQ क्या है?', pa: 'MandiQ ਕੀ ਹੈ?', mr: 'MandiQ काय आहे?' },
+    question: { en: 'What is MandiQ?', hi: 'मंडीक्यू क्या है?', pa: 'ਮੰਡੀਕਿਊ ਕੀ ਹੈ?', mr: 'मंडीक्यू काय आहे?' },
     answer: {
       en: 'MandiQ is an AI-powered mandi price app that helps farmers know the right price and best mandi to sell crops. It includes price prediction, mandi comparison and alerts.',
-      hi: 'MandiQ एक AI-powered मंडी प्राइस ऐप है जो किसानों को सही कीमत और फसल बेचने की सबसे अच्छी मंडी बताता है। इसमें प्राइस पूर्वानुमान, मंडी तुलना और अलर्ट मिलते हैं।',
-      pa: 'MandiQ ਇੱਕ AI-ਅਧਾਰਿਤ ਮੰਡੀ ਭਾਅ ਐਪ ਹੈ ਜੋ ਕਿਸਾਨਾਂ ਨੂੰ ਸਹੀ ਭਾਅ ਅਤੇ ਫਸਲ ਵੇਚਣ ਦੀ ਸਭ ਤੋਂ ਵਧੀਆ ਮੰਡੀ ਦੱਸਦਾ ਹੈ।',
-      mr: 'MandiQ हे एक AI-आधारित मंडी किंमत ॲप आहे जे शेतकऱ्यांना योग्य किंमत आणि पीक विकण्यासाठी सर्वोत्तम मंडी सांगते.',
+      hi: 'मंडीक्यू एक एआई-संचालित मंडी मूल्य ऐप है जो किसानों को सही कीमत और फसल बेचने की सबसे अच्छी मंडी बताता है। इसमें मूल्य पूर्वानुमान, मंडी तुलना और अलर्ट मिलते हैं।',
+      pa: 'ਮੰਡੀਕਿਊ ਇੱਕ ਏਆਈ-ਆਧਾਰਿਤ ਮੰਡੀ ਭਾਅ ਐਪ ਹੈ ਜੋ ਕਿਸਾਨਾਂ ਨੂੰ ਸਹੀ ਭਾਅ ਅਤੇ ਫਸਲ ਵੇਚਣ ਦੀ ਸਭ ਤੋਂ ਵਧੀਆ ਮੰਡੀ ਦੱਸਦਾ ਹੈ।',
+      mr: 'मंडीक्यू हे एक AI-आधारित मंडी किंमत ॲप आहे जे शेतकऱ्यांना योग्य किंमत आणि पीक विकण्यासाठी सर्वोत्तम मंडी सांगते.',
     },
   },
   {
@@ -58,9 +58,9 @@ const QA: QAEntry[] = [
     question: { en: 'Which mandis are available?', hi: 'कौन सी मंडियाँ हैं?', pa: 'ਕਿਹੜੀਆਂ ਮੰਡੀਆਂ ਹਨ?', mr: 'कोणत्या मंड्या आहेत?' },
     answer: {
       en: 'Currently MandiQ has 3 mandis: Azadpur APMC, Keshopur APMC and Shahdara APMC. Select from the dropdown on the Home screen.',
-      hi: 'अभी MandiQ में दिल्ली की 3 मंडियाँ हैं: अजादपुर APMC, केशोपुर APMC और शाहदरा APMC। होम स्क्रीन पर "मंडी चुनें" से चुनें।',
-      pa: 'ਹੁਣ MandiQ ਵਿੱਚ ਦਿੱਲੀ ਦੀਆਂ 3 ਮੰਡੀਆਂ ਹਨ: ਅਜ਼ਾਦਪੁਰ APMC, ਕੇਸ਼ੋਪੁਰ APMC ਅਤੇ ਸ਼ਾਹਦਰਾ APMC।',
-      mr: 'सध्या MandiQ मध्ये दिल्लीच्या 3 मंड्या आहेत: अझादपूर APMC, केशोपूर APMC आणि शाहदरा APMC.',
+      hi: 'अभी मंडीक्यू में दिल्ली की 3 मंडियाँ हैं: अजादपुर APMC, केशोपुर APMC और शाहदरा APMC। होम स्क्रीन पर "मंडी चुनें" से चुनें।',
+      pa: 'ਹੁਣ ਮੰਡੀਕਿਊ ਵਿੱਚ ਦਿੱਲੀ ਦੀਆਂ 3 ਮੰਡੀਆਂ ਹਨ: ਅਜ਼ਾਦਪੁਰ APMC, ਕੇਸ਼ੋਪੁਰ APMC ਅਤੇ ਸ਼ਾਹਦਰਾ APMC।',
+      mr: 'सध्या मंडीक्यू मध्ये दिल्लीच्या 3 मंड्या आहेत: अझादपूर APMC, केशोपूर APMC आणि शाहदरा APMC.',
     },
   },
   {
@@ -68,27 +68,27 @@ const QA: QAEntry[] = [
     question: { en: 'Which crops are supported?', hi: 'कौन सी फसलें हैं?', pa: 'ਕਿਹੜੀਆਂ ਫਸਲਾਂ ਹਨ?', mr: 'कोणती पिके आहेत?' },
     answer: {
       en: 'MandiQ has 4 crops: Tomato 🍅, Potato 🥔, Onion 🧅, and Spinach 🌿. Tap the crop icon on the Home screen to select.',
-      hi: 'MandiQ में 4 फसलें हैं: टमाटर 🍅, आलू 🥔, प्याज 🧅, और पालक 🌿। होम स्क्रीन पर फसल के आइकन पर टैप करें।',
-      pa: 'MandiQ ਵਿੱਚ 4 ਫਸਲਾਂ ਹਨ: ਟਮਾਟਰ 🍅, ਆਲੂ 🥔, ਪਿਆਜ਼ 🧅, ਅਤੇ ਪਾਲਕ 🌿।',
-      mr: 'MandiQ मध्ये 4 पिके आहेत: टोमॅटो 🍅, बटाटा 🥔, कांदा 🧅, आणि पालक 🌿.',
+      hi: 'मंडीक्यू में 4 फसलें हैं: टमाटर 🍅, आलू 🥔, प्याज 🧅, और पालक 🌿। होम स्क्रीन पर फसल के आइकन पर टैप करें।',
+      pa: 'ਮੰਡੀਕਿਊ ਵਿੱਚ 4 ਫਸਲਾਂ ਹਨ: ਟਮਾਟਰ 🍅, ਆਲੂ 🥔, ਪਿਆਜ਼ 🧅, ਅਤੇ ਪਾਲਕ 🌿।',
+      mr: 'मंडीक्यू मध्ये 4 पिके आहेत: टोमॅटो 🍅, बटाटा 🥔, कांदा 🧅, आणि पालक 🌿.',
     },
   },
   {
     keywords: ['prediction', 'forecast', 'भविष्य', 'ਭਵਿੱਖ', 'future', 'aage', 'agle', 'पूर्वानुमान', 'अंदाज'],
-    question: { en: 'How does Prediction work?', hi: 'Prediction कैसे काम करता है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕਿਵੇਂ ਕੰਮ ਕਰਦੀ ਹੈ?', mr: 'अंदाज कसा काम करतो?' },
+    question: { en: 'How does Prediction work?', hi: 'पूर्वानुमान कैसे काम करता है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕਿਵੇਂ ਕੰਮ ਕਰਦੀ ਹੈ?', mr: 'अंदाज कसा काम करतो?' },
     answer: {
       en: "MandiQ's AI model predicts prices for the next 7 days. Labels showing \"~est.\" indicate estimated values. See full details on the Prediction screen.",
-      hi: 'MandiQ का AI मॉडल अगले 7 दिनों की कीमत का अनुमान लगाता है। "~अनु." लेबल अनुमानित कीमत दर्शाता है। पूर्वानुमान स्क्रीन पर पूरी जानकारी देखें।',
-      pa: 'MandiQ ਦਾ AI ਮਾਡਲ ਅਗਲੇ 7 ਦਿਨਾਂ ਦੇ ਭਾਅ ਦਾ ਅਨੁਮਾਨ ਲਗਾਉਂਦਾ ਹੈ।',
-      mr: 'MandiQ चे AI मॉडेल पुढील 7 दिवसांच्या किंमतीचा अंदाज लावते.',
+      hi: 'मंडीक्यू का एआई मॉडल अगले 7 दिनों की कीमत का अनुमान लगाता है। "~अनु." लेबल अनुमानित कीमत दर्शाता है। पूर्वानुमान स्क्रीन पर पूरी जानकारी देखें।',
+      pa: 'ਮੰਡੀਕਿਊ ਦਾ ਏਆਈ ਮਾਡਲ ਅਗਲੇ 7 ਦਿਨਾਂ ਦੇ ਭਾਅ ਦਾ ਅਨੁਮਾਨ ਲਗਾਉਂਦਾ ਹੈ।',
+      mr: 'मंडीक्यू चे एआय मॉडेल पुढील 7 दिवसांच्या किंमतीचा अंदाज लावते.',
     },
   },
   {
     keywords: ['alert', 'notification', 'अलर्ट', 'ਅਲਰਟ', 'suchna', 'price set', 'सूचना'],
-    question: { en: 'How to set a price alert?', hi: 'Alert कैसे सेट करें?', pa: 'ਅਲਰਟ ਕਿਵੇਂ ਸੈੱਟ ਕਰੀਏ?', mr: 'सूचना कशी सेट करावी?' },
+    question: { en: 'How to set a price alert?', hi: 'अलर्ट कैसे सेट करें?', pa: 'ਅਲਰਟ ਕਿਵੇਂ ਸੈੱਟ ਕਰੀਏ?', mr: 'सूचना कशी सेट करावी?' },
     answer: {
       en: 'Go to the Alerts screen (bottom nav). Set your target price — when the market price reaches that level you will get a notification.',
-      hi: 'अलर्ट स्क्रीन पर जाएं (बॉटम नेव से)। अपनी टारगेट कीमत सेट करें — जब कीमत उस स्तर पर पहुँचे तब आपको सूचना मिलेगी।',
+      hi: 'अलर्ट स्क्रीन पर जाएं (नीचे दिए गए नेविगेशन बार से)। अपनी लक्ष्य कीमत सेट करें — जब कीमत उस स्तर पर पहुँचे तब आपको सूचना मिलेगी।',
       pa: 'ਅਲਰਟ ਸਕਰੀਨ ਤੇ ਜਾਓ। ਆਪਣਾ ਟੀਚਾ ਭਾਅ ਸੈੱਟ ਕਰੋ — ਜਦੋਂ ਮੰਡੀ ਭਾਅ ਉਸ ਪੱਧਰ ਤੇ ਪਹੁੰਚੇ ਤਾਂ ਸੂਚਨਾ ਮਿਲੇਗੀ।',
       mr: 'सूचना स्क्रीनवर जा. तुमची लक्ष्य किंमत सेट करा — किंमत त्या पातळीवर पोहोचल्यावर सूचना मिळेल.',
     },
@@ -115,7 +115,7 @@ const QA: QAEntry[] = [
   },
   {
     keywords: ['help', 'madad', 'मदद', 'ਮਦਦ', 'problem', 'issue', 'error', 'kaam nahi', 'मदत'],
-    question: { en: 'App not working?', hi: 'App काम नहीं कर रहा?', pa: 'App ਕੰਮ ਨਹੀਂ ਕਰ ਰਿਹਾ?', mr: 'App काम करत नाही?' },
+    question: { en: 'App not working?', hi: 'ऐप काम नहीं कर रहा?', pa: 'ਐਪ ਕੰਮ ਨਹੀਂ ਕਰ ਰਿਹਾ?', mr: 'ॲप काम करत नाही?' },
     answer: {
       en: "If something isn't working, close and reopen the app. Check your internet connection. If the problem persists, contact us at the email below.",
       hi: 'कोई चीज़ काम न करे तो ऐप बंद करके दोबारा खोलें। इंटरनेट कनेक्शन चेक करें। समस्या बनी रहे तो नीचे दी ई-मेल पर संपर्क करें।',
@@ -125,7 +125,7 @@ const QA: QAEntry[] = [
   },
   {
     keywords: ['accuracy', 'sahi', 'kitna', 'percent', 'सटीक', 'accurate', 'ਸਟੀਕ', 'अचूक'],
-    question: { en: 'How accurate is the prediction?', hi: 'Prediction कितना सटीक है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕਿੰਨੀ ਸਟੀਕ ਹੈ?', mr: 'अंदाज किती अचूक आहे?' },
+    question: { en: 'How accurate is the prediction?', hi: 'पूर्वानुमान कितना सटीक है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕਿੰਨੀ ਸਟੀਕ ਹੈ?', mr: 'अंदाज किती अचूक आहे?' },
     answer: {
       en: "MandiQ's prediction accuracy is 70–90% depending on the crop and season. Weather, supply disruptions, and festivals can cause unexpected changes.",
       hi: 'MandiQ की पूर्वानुमान सटीकता फसल और मौसम के अनुसार 70–90% होती है। मौसम, आपूर्ति में रुकावट और त्योहार अप्रत्याशित बदलाव ला सकते हैं।',

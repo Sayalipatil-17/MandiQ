@@ -68,7 +68,7 @@ export function MandiInfoScreen() {
           {MARKETS.map(m => (
             <button key={m.value} onClick={() => { setSelectedMarket(m.value); localStorage.setItem('selectedMarket', m.value); }}
               className={`flex-1 py-2.5 px-2 rounded-2xl border-2 text-xs font-medium transition-all ${selectedMarket === m.value ? 'bg-white border-white text-[#2d6a3e]' : 'bg-white/15 border-white/20 text-white'}`}>
-              {m.emoji} {m.label.replace(' Mandi', '')}
+              {m.emoji} {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}
             </button>
           ))}
         </div>
@@ -84,7 +84,9 @@ export function MandiInfoScreen() {
 
         {!ld && (
           <>
-            <p className="text-sm text-gray-500 mb-3">{selectedMandiObj.emoji} {selectedMandiObj.label} — {t('info.todayPrices')}</p>
+            <p className="text-sm text-gray-500 mb-3">
+              {selectedMandiObj.emoji} {t(selectedMandiObj.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')} — {t('info.todayPrices')}
+            </p>
             <div className="space-y-3">
               {rows.map(c => (
                 <div key={c.name} className="mq-card p-4 flex items-center justify-between">

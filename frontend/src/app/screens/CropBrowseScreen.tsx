@@ -12,10 +12,10 @@ const CROP_ICONS: Record<string, string> = {
 };
 
 const categories = [
-  { id: 'all', icon: Leaf, label: 'All' },
-  { id: 'vegetables', icon: Leaf, label: 'Veggies' },
-  { id: 'fruits', icon: Apple, label: 'Fruits' },
-  { id: 'grains', icon: Wheat, label: 'Grains' },
+  { id: 'all', icon: Leaf, labelKey: 'crops.category.all' },
+  { id: 'vegetables', icon: Leaf, labelKey: 'crops.category.vegetables' },
+  { id: 'fruits', icon: Apple, labelKey: 'crops.category.fruits' },
+  { id: 'grains', icon: Wheat, labelKey: 'crops.category.grains' },
 ];
 
 const CROPS = [
@@ -33,7 +33,7 @@ const CROPS = [
 type CR = (typeof CROPS)[number] & { currentPrice: number | null; trend: 'up' | 'down' | 'stable'; available: boolean };
 
 export function CropBrowseScreen() {
-  const nav = useNavigate(); const { t } = useT();
+  const nav = useNavigate(); const { t, lang } = useT();
   const [sq, setSq] = useState('');
   const [sc, setSc] = useState('all');
   const [sel, setSel] = useState<string | null>(null);
@@ -80,13 +80,12 @@ export function CropBrowseScreen() {
             <ArrowLeft className="w-5 h-5 text-[#2d6a3e]" />
           </button>
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">Select Crop</h2>
-            <p className="text-xs text-gray-400">फसल चुनें</p>
+            <h2 className="text-lg font-semibold text-gray-800">{t('home.selectCrop')}</h2>
           </div>
         </div>
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input type="text" placeholder="Search crops / फसल खोजें" value={sq} onChange={e => setSq(e.target.value)}
+          <Input type="text" placeholder={t('common.search') + '...'} value={sq} onChange={e => setSq(e.target.value)}
             className="pl-11 h-11 rounded-2xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-[#2d6a3e]/20" />
         </div>
       </div>
@@ -100,13 +99,13 @@ export function CropBrowseScreen() {
               <button key={cat.id} onClick={() => setSc(cat.id)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${sc === cat.id ? 'bg-[#2d6a3e] text-white shadow-md shadow-[#2d6a3e]/20' : 'bg-white text-gray-600 border border-gray-200'}`}>
                 <I className="w-3.5 h-3.5" />
-                {cat.label}
+                {t(cat.labelKey)}
               </button>
             );
           })}
         </div>
 
-        <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">{fc.filter(c => c.available).length} crops available</p>
+        <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">{t('crops.availableCount').replace('{count}', fc.filter(c => c.available).length.toString())}</p>
 
         <div className="space-y-3">
           {fc.map(crop => (
@@ -121,14 +120,14 @@ export function CropBrowseScreen() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <p className="font-semibold text-gray-800">{crop.name}</p>
-                    {crop.seasonal && <span className="px-2 py-0.5 bg-[#fff7ed] text-[#f97316] text-xs rounded-full font-medium">Seasonal</span>}
+                    <p className="font-semibold text-gray-800">{t(`crops.${crop.name.toLowerCase()}`)}</p>
+                    {crop.seasonal && <span className="px-2 py-0.5 bg-[#fff7ed] text-[#f97316] text-xs rounded-full font-medium">{t('crops.seasonal')}</span>}
                   </div>
-                  <p className="text-sm text-gray-400 mb-1.5">{crop.nameHindi}</p>
+                  {lang !== 'en' && <p className="text-sm text-gray-400 mb-1.5">{crop.name}</p>}
                   <div className="flex items-center gap-3 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{crop.shelfLife}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t(`crops.shelflife.${crop.name.toLowerCase()}`)}</span>
                     {crop.available && crop.currentPrice !== null && (
-                      <span className="text-[#2d6a3e] font-semibold">₹{crop.currentPrice}/qtl</span>
+                      <span className="text-[#2d6a3e] font-semibold">₹{crop.currentPrice}/{t('common.perQuintal')}</span>
                     )}
                   </div>
                 </div>
@@ -142,7 +141,7 @@ export function CropBrowseScreen() {
                           <Minus className="w-5 h-5 text-gray-400" />}
                     </div>
                   ) : (
-                    <span className="px-2.5 py-1 bg-[#fff7ed] text-[#f97316] text-xs rounded-xl font-medium">Soon</span>
+                    <span className="px-2.5 py-1 bg-[#fff7ed] text-[#f97316] text-xs rounded-xl font-medium">{t('crops.soon')}</span>
                   )}
                 </div>
               </div>

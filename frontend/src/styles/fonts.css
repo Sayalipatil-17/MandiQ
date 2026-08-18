@@ -11,10 +11,18 @@ body {
   font-feature-settings: 'kern' 1;
 }
 
-/* Hindi/Devanagari text */
-:lang(hi), .text-hindi {
+/* Hindi/Devanagari text - scale root font size slightly so Devnagari matches English visual weight */
+html:lang(hi), html:lang(mr), .text-hindi {
   font-family: 'Noto Sans Devanagari', 'DM Sans', sans-serif;
-  line-height: 1.75;
+  font-size: 110%;
+  line-height: 1.6;
+}
+
+/* Punjabi text - scale root font size slightly so Gurmukhi matches English visual weight */
+html:lang(pa), .text-punjabi {
+  font-family: 'Noto Sans Gurmukhi', 'DM Sans', sans-serif;
+  font-size: 110%;
+  line-height: 1.6;
 }
 
 /* Price numbers — tabular, tight */

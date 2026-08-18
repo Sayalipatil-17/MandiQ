@@ -18,6 +18,7 @@ export function ProfileScreen() {
   const [showEdit, setShowEdit] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
+  const [alreadyRated, setAlreadyRated] = useState(() => localStorage.getItem('mandiq_rated') === 'true');
   const [rated, setRated] = useState(false);
   const [feedback, setFeedback] = useState('');
 
@@ -48,7 +49,7 @@ export function ProfileScreen() {
         ? (typeof data.farmer_details === 'string' ? JSON.parse(data.farmer_details) : data.farmer_details)
         : {};
       setEditName(data?.name || '');
-      setEditRole(data?.role || 'farmer');
+      setEditRole(data?.user_type || 'farmer');
       setEditState(fd?.state || '');
       setEditDistrict(fd?.district || '');
       setEditCrops(fd?.crops || []);
@@ -71,7 +72,7 @@ export function ProfileScreen() {
       ? (typeof user.farmer_details === 'string' ? JSON.parse(user.farmer_details) : user.farmer_details)
       : {};
     setEditName(user?.name || '');
-    setEditRole(user?.role || 'farmer');
+    setEditRole(user?.user_type || 'farmer');
     setEditState(fd?.state || '');
     setEditDistrict(fd?.district || '');
     setEditCrops(fd?.crops || []);
@@ -125,7 +126,7 @@ export function ProfileScreen() {
             </div>
             <div className="text-white">
               <h2 className="text-xl font-bold">{user?.name || 'Namaste'}</h2>
-              <p className="text-white/80 text-sm">{user?.role === 'farmer' ? `🌾 ${t('profile.farmer')}` : `🏪 ${t('profile.trader')}`}</p>
+              <p className="text-white/80 text-sm">{user?.user_type === 'farmer' ? `🌾 ${t('profile.farmer')}` : `🏪 ${t('profile.trader')}`}</p>
               <p className="text-white/70 text-sm">+91 {user?.mobile_number || user?.mobile || ''}</p>
             </div>
           </div>
@@ -184,91 +185,85 @@ export function ProfileScreen() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setShowAbout(true)}
-            className="bg-[#f0f7f1] rounded-2xl p-5 border border-[#2d6a3e]/15 flex flex-col items-start gap-3 active:scale-95 transition-all">
+        <button onClick={() => setShowAbout(true)}
+          className="w-full bg-[#f0f7f1] rounded-2xl p-5 border border-[#2d6a3e]/15 flex items-center justify-between transition-all active:scale-95">
+          <div className="flex items-center gap-4">
             <div className="w-11 h-11 bg-[#2d6a3e] rounded-xl flex items-center justify-center">
               <Info className="w-5 h-5 text-white" />
             </div>
-            <div>
+            <div className="text-left">
               <p className="text-sm font-semibold text-gray-800">{t('profile.about')}</p>
               <p className="text-xs text-gray-400">{t('profile.aboutSub')}</p>
             </div>
-          </button>
-
-          <button
-            onClick={() => { setShowAbout(false); setRated(false); setRating(0); setFeedback(''); setTimeout(() => document.getElementById('rate-section')?.scrollIntoView({ behavior: 'smooth' }), 50); }}
-            className="bg-[#fff7ed] rounded-2xl p-5 border border-[#f97316]/20 flex flex-col items-start gap-3 active:scale-95 transition-all">
-            <div className="w-11 h-11 bg-[#f97316] rounded-xl flex items-center justify-center">
-              <Star className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">{t('profile.rate')}</p>
-              <p className="text-xs text-gray-400">{t('profile.rateSub')}</p>
-            </div>
-          </button>
-        </div>
+          </div>
+          <span className="text-xs text-[#2d6a3e] font-semibold flex items-center gap-1">
+            {t('home.viewBtn')}
+          </span>
+        </button>
 
         {/* Rate & Feedback section */}
-        <div id="rate-section" className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
-          {!rated ? (
-            <>
-              <div className="flex items-center gap-2 mb-4">
-                <Star className="w-5 h-5 text-[#f97316]" />
-                <p className="font-semibold text-gray-800">{t('profile.rateTitle')}</p>
-              </div>
-              <div className="flex gap-2 justify-center mb-4">
-                {STARS.map(s => (
-                  <button key={s}
-                    onMouseEnter={() => rating === 0 && setHovered(s)}
-                    onMouseLeave={() => rating === 0 && setHovered(0)}
-                    onClick={() => { setRating(s); setHovered(0); }}
-                    className="text-3xl transition-transform active:scale-90">
-                    <span style={{ color: s <= (rating || hovered) ? '#f97316' : '#e5e7eb' }}>★</span>
-                  </button>
-                ))}
-              </div>
-              {rating > 0 && (
-                <div className="space-y-3">
-                  <textarea
-                    value={feedback}
-                    onChange={e => setFeedback(e.target.value)}
-                    placeholder={t('profile.feedbackPh')}
-                    rows={3}
-                    className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#2d6a3e] resize-none"
-                  />
-                  <button
-                    onClick={async () => {
-                      try {
-                        const token = localStorage.getItem('mandiq_token');
-                        await fetch(`${BASE_URL}/api/rating`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                          body: JSON.stringify({ stars: rating, feedback }),
-                        });
-                      } catch { }
-                      setRated(true);
-                    }}
-                    className="w-full py-3 rounded-xl font-semibold text-sm text-white"
-                    style={{ background: '#f97316' }}>
-                    {t('profile.submitFeedback')}
-                  </button>
+        {!alreadyRated && (
+          <div id="rate-section" className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+            {!rated ? (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <Star className="w-5 h-5 text-[#f97316]" />
+                  <p className="font-semibold text-gray-800">{t('profile.rateTitle')}</p>
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-2">
-              <p className="text-3xl mb-2">🙏</p>
-              <p className="font-semibold text-gray-800">{t('profile.thanks')}</p>
-              <p className="text-sm text-gray-400 mt-1">{t('profile.thanksMsg')}</p>
-              <div className="flex justify-center gap-1 mt-3">
-                {STARS.map(s => (
-                  <span key={s} style={{ color: s <= rating ? '#f97316' : '#e5e7eb', fontSize: '20px' }}>★</span>
-                ))}
+                <div className="flex gap-2 justify-center mb-4">
+                  {STARS.map(s => (
+                    <button key={s}
+                      onMouseEnter={() => rating === 0 && setHovered(s)}
+                      onMouseLeave={() => rating === 0 && setHovered(0)}
+                      onClick={() => { setRating(s); setHovered(0); }}
+                      className="text-3xl transition-transform active:scale-90">
+                      <span style={{ color: s <= (rating || hovered) ? '#f97316' : '#e5e7eb' }}>★</span>
+                    </button>
+                  ))}
+                </div>
+                {rating > 0 && (
+                  <div className="space-y-3">
+                    <textarea
+                      value={feedback}
+                      onChange={e => setFeedback(e.target.value)}
+                      placeholder={t('profile.feedbackPh')}
+                      rows={3}
+                      className="w-full text-sm px-3 py-2.5 rounded-xl border border-gray-200 outline-none focus:border-[#2d6a3e] resize-none"
+                    />
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('mandiq_token');
+                          await fetch(`${BASE_URL}/api/rating`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                            body: JSON.stringify({ stars: rating, feedback }),
+                          });
+                        } catch { }
+                        localStorage.setItem('mandiq_rated', 'true');
+                        setRated(true);
+                      }}
+                      className="w-full py-3 rounded-xl font-semibold text-sm text-white"
+                      style={{ background: '#f97316' }}>
+                      {t('profile.submitFeedback')}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-2">
+                <p className="text-3xl mb-2">🙏</p>
+                <p className="font-semibold text-gray-800">{t('profile.thanks')}</p>
+                <p className="text-sm text-gray-400 mt-1">{t('profile.thanksMsg')}</p>
+                <div className="flex justify-center gap-1 mt-3">
+                  {STARS.map(s => (
+                    <span key={s} style={{ color: s <= rating ? '#f97316' : '#e5e7eb', fontSize: '20px' }}>★</span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
       </div>
       <BottomNav />

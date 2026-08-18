@@ -19,7 +19,7 @@ export function LocationScreen() {
 
   async function handleGetCurrentLocation() {
     if (!navigator.geolocation) {
-      setGpsError('GPS geolocation not supported by your browser.');
+      setGpsError(t('onboarding.gpsError.unsupported'));
       return;
     }
 
@@ -51,10 +51,10 @@ export function LocationScreen() {
             if (detectedDistrict) setDistrict(detectedDistrict.replace(/district/gi, '').trim());
             if (detectedVillage) setVillage(detectedVillage);
           } else {
-            setGpsError('Could not fetch address details from GPS.');
+            setGpsError(t('onboarding.gpsError.fetchFailed'));
           }
         } catch {
-          setGpsError('Network error fetching address from coordinates.');
+          setGpsError(t('onboarding.gpsError.network'));
         } finally {
           setGpsLoading(false);
         }
@@ -63,10 +63,10 @@ export function LocationScreen() {
         setGpsLoading(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setGpsError('GPS permission denied. Please allow location access.');
+            setGpsError(t('onboarding.gpsError.denied'));
             break;
           default:
-            setGpsError('GPS signal weak or unavailable. Select manually.');
+            setGpsError(t('onboarding.gpsError.weak'));
         }
       },
       { timeout: 10000 }
@@ -136,7 +136,7 @@ export function LocationScreen() {
             >
               <option value="">{t('onboarding.selectState')}</option>
               {STATES.map(s => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{t('state.' + s.toLowerCase().replace(/ /g, ''))}</option>
               ))}
             </select>
           </div>

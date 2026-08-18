@@ -75,7 +75,7 @@ export function MandiCompareScreen() {
               <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
               <p className="font-semibold text-sm">{t('cmp.bestSell')}</p>
             </div>
-            <p className="text-2xl font-bold">{bestMandi.emoji} {bestMandi.value}</p>
+            <p className="text-2xl font-bold">{bestMandi.emoji} {t(bestMandi.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')}</p>
           </div>
         )}
 
@@ -87,8 +87,8 @@ export function MandiCompareScreen() {
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl">{m.emoji}</div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-800">{m.value}</p>
-                    {m.isBest && <span className="px-2 py-0.5 bg-[#f97316] text-white text-xs rounded-full flex items-center gap-1"><Star className="w-3 h-3 fill-white" /> Best</span>}
+                    <p className="font-semibold text-gray-800">{t(m.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')}</p>
+                    {m.isBest && <span className="px-2 py-0.5 bg-[#f97316] text-white text-xs rounded-full flex items-center gap-1"><Star className="w-3 h-3 fill-white" /> {t('common.best')}</span>}
                   </div>
                 </div>
                 <button onClick={() => window.open(`https://maps.google.com/?q=${m.value}+Delhi`, '_blank')}

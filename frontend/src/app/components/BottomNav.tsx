@@ -41,7 +41,7 @@ export function BottomNav() {
                 }`} strokeWidth={isActive ? 2.5 : 1.8} />
               </div>
 
-              <span className={`text-[10px] font-semibold tracking-wide transition-colors ${
+              <span className={`text-xs font-semibold tracking-wide transition-colors ${
                 isActive ? 'text-[#2d6a3e]' : 'text-gray-400'
               }`}>
                 {tab.label}
