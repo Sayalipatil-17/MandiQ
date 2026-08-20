@@ -67,14 +67,18 @@ class MandiQReversion:
         out = {"commodity": commodity, "market": market, "today_price": round(today),
                "ma3": round(ma3), "deviation_pct": round(dev * 100, 1)}
         if absdev < MIN_ACT_PCT or pr is None:
-            out.update({"predicted_price": round(today), "price_low": round(today),
-                        "price_high": round(today), "direction": "FLAT", "confidence": "-",
+            resid_std = pr["resid_std"] if pr is not None else 0.03
+            half = max(1.2816 * resid_std * today, 50.0)
+            pred = today
+            out.update({"predicted_price": round(pred), "price_low": round(pred - half),
+                        "price_high": round(pred + half), "direction": "FLAT", "confidence": "-",
                         "signal": "WATCH", "expected_accuracy_pct": None,
-                        "message": "Aaj ka bhav average ke aas-paas - kal bhi lagbhag isi ke aas-paas."})
+                        "message": f"Aaj ka bhav average ke aas-paas - kal lagbhag Rs.{round(pred)} (Rs.{round(pred-half)}-{round(pred+half)}) ke aas-paas."})
             return out
         tier, acc = self._tier(absdev)
         exp_ret = pr["tiers"].get(f"{tier}|{int(np.sign(dev))}", 0.0)
-        pred = today * (1 + exp_ret); half = 1.2816 * pr["resid_std"] * today
+        pred = today * (1 + exp_ret)
+        half = max(1.2816 * pr["resid_std"] * today, 50.0)
         direction = "DOWN" if exp_ret < 0 else "UP"; action = "SELL" if direction == "DOWN" else "HOLD"
         verb = "girne" if direction == "DOWN" else "badhne"
         adv = "Aaj bechna theek." if direction == "DOWN" else "Thoda ruk sakte ho."

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background Circle with soft green color -->
+  <circle cx="50" cy="50" r="48" fill="#E2F0D9" stroke="#84C068" stroke-width="2" />
+  
+  <!-- Face/Skin -->
+  <path d="M50 30 C38 30, 36 45, 36 52 C36 63, 44 67, 50 67 C56 67, 64 63, 64 52 C64 45, 62 30, 50 30 Z" fill="#FFDBAC" />
+  
+  <!-- Ears -->
+  <circle cx="34" cy="50" r="5" fill="#FFDBAC" />
+  <circle cx="66" cy="50" r="5" fill="#FFDBAC" />
+  
+  <!-- Friendly Eyes -->
+  <circle cx="44" cy="48" r="3" fill="#333333" />
+  <circle cx="56" cy="48" r="3" fill="#333333" />
+  
+  <!-- Smiling Mouth -->
+  <path d="M43 56 Q50 62 57 56" stroke="#333333" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  
+  <!-- Traditional Indian Farmer Turban (Pagri) - Beautiful Flat 2D Orange/Saffron -->
+  <path d="M32 32 C30 26, 38 18, 48 20 C54 18, 68 22, 68 32 C68 32, 60 26, 50 28 C40 26, 32 32, 32 32 Z" fill="#FF9933" />
+  <path d="M35 28 C45 22, 55 22, 65 28 C68 30, 62 20, 50 22 C38 20, 32 30, 35 28 Z" fill="#FF8000" />
+  <path d="M40 22 C45 16, 55 16, 60 22" stroke="#FF5500" stroke-width="1.5" fill="none" />
+
+  <!-- Shoulders / Traditional White Kurta with Green Scarf (Gamcha) -->
+  <path d="M22 85 C22 75, 32 68, 50 68 C68 68, 78 75, 78 85 L78 95 L22 95 Z" fill="#FFFFFF" stroke="#CCCCCC" stroke-width="1" />
+  <!-- Green Scarf (Gamcha) -->
+  <path d="M30 68 C34 74, 34 88, 32 95" stroke="#4CAF50" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M70 68 C66 74, 66 88, 68 95" stroke="#4CAF50" stroke-width="6" fill="none" stroke-linecap="round" />
+</svg>

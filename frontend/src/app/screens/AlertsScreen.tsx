@@ -24,7 +24,9 @@ export function AlertsScreen() {
   const [selectedCrop, setSelectedCrop] = useState(crop);
   const [direction, setDirection] = useState<'above' | 'below'>('above');
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [notifications, setNotifications] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
   const [bestDay, setBestDay] = useState(() => localStorage.getItem('bestDayAlert') === 'on');
@@ -36,9 +38,28 @@ export function AlertsScreen() {
     setLoading(true);
     try {
       const r = await fetch(`${BASE_URL}/api/alerts`, { headers: authHeaders() });
-      if (r.ok) setAlerts(await r.json());
-    } catch {}
+      if (r.ok) {
+        setAlerts(await r.json());
+      } else {
+        console.error("GET active alerts failed:", r.status);
+      }
+    } catch (err) {
+      console.error("GET active alerts exception:", err);
+    }
     setLoading(false);
+
+    setNotifLoading(true);
+    try {
+      const r = await fetch(`${BASE_URL}/api/alerts?triggered=1`, { headers: authHeaders() });
+      if (r.ok) {
+        setNotifications(await r.json());
+      } else {
+        console.error("GET triggered alerts failed:", r.status);
+      }
+    } catch (err) {
+      console.error("GET triggered alerts exception:", err);
+    }
+    setNotifLoading(false);
   }
 
   async function createAlert() {
@@ -65,6 +86,7 @@ export function AlertsScreen() {
     try {
       await fetch(`${BASE_URL}/api/alerts/${id}`, { method: 'DELETE', headers: authHeaders() });
       setAlerts(prev => prev.filter(a => a.id !== id));
+      setNotifications(prev => prev.filter(a => a.id !== id));
     } catch {}
   }
 
@@ -87,9 +109,6 @@ export function AlertsScreen() {
             <h2 className="text-lg font-semibold text-white">{t('alerts.title')}</h2>
             <p className="text-white/70 text-xs">{t('alerts.subtitle')}</p>
           </div>
-          <div className="ml-auto bg-white/20 px-3 py-1.5 rounded-xl">
-            <p className="text-white text-xs font-semibold">📱 SMS</p>
-          </div>
         </div>
       </div>
 
@@ -97,7 +116,7 @@ export function AlertsScreen() {
 
         {/* How it works */}
         <div className="bg-[#e8f5e9] rounded-2xl p-4 border border-[#2d6a3e]/20">
-          <p className="text-xs font-semibold text-[#2d6a3e] mb-2">📱 {t('alerts.howItWorks')}</p>
+          <p className="text-xs font-semibold text-[#2d6a3e] mb-2">🔔 {t('alerts.howItWorks')}</p>
           <div className="space-y-1.5">
             <p className="text-xs text-gray-600">1️⃣ {t('alerts.step1')}</p>
             <p className="text-xs text-gray-600">2️⃣ {t('alerts.step2')}</p>
@@ -133,11 +152,11 @@ export function AlertsScreen() {
           <p className="text-xs text-gray-400 mb-2">{t('alerts.direction')}</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
             <button onClick={() => setDirection('above')}
-              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'above' ? 'bg-green-600 border-green-600 text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'above' ? 'bg-[#2d6a3e] border-[#2d6a3e] text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
               {t('alerts.above')}
             </button>
             <button onClick={() => setDirection('below')}
-              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'below' ? 'bg-red-500 border-red-500 text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${direction === 'below' ? 'bg-[#c9183a] border-[#c9183a] text-white' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
               {t('alerts.below')}
             </button>
           </div>
@@ -249,6 +268,45 @@ export function AlertsScreen() {
                 </div>
                 <button onClick={() => deleteAlert(a.id)}
                   className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Triggered Alerts History (Notifications) */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="w-5 h-5 text-[#2d6a3e]" />
+            <p className="font-semibold text-gray-800">{t('alerts.historyTitle')}</p>
+          </div>
+
+          {notifLoading && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-[#2d6a3e]" />
+            </div>
+          )}
+
+          {!notifLoading && notifications.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-4">{t('alerts.noHistory')}</p>
+          )}
+
+          <div className="space-y-3">
+            {notifications.map(a => (
+              <div key={a.id} className="flex items-center justify-between bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{CROP_ICONS[a.crop] || '🌱'}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{cropName(a.crop, t)}</p>
+                    <p className="text-xs text-gray-500">
+                      Target crossed: <span className="font-bold text-gray-700">₹{a.target_price}</span>
+                    </p>
+                    <p className="text-[10px] text-gray-400">Triggered: {a.triggered_at ? new Date(a.triggered_at).toLocaleString('en-IN') : ''}</p>
+                  </div>
+                </div>
+                <button onClick={() => deleteAlert(a.id)}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

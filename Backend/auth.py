@@ -1,6 +1,5 @@
 import jwt
 import os
-import random
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
@@ -8,17 +7,6 @@ from fastapi import Header, HTTPException, Depends
 from pathlib import Path
 from dotenv import load_dotenv
 from database import MandiDB
-
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
-
-# Firebase Admin SDK initialize karo
-BASE_DIR_FB = Path(__file__).resolve().parent
-_fb_cred_path = BASE_DIR_FB / "firebase-service-account.json"
-if not firebase_admin._apps and _fb_cred_path.exists():
-    cred = credentials.Certificate(str(_fb_cred_path))
-    firebase_admin.initialize_app(cred)
-
 
 log = logging.getLogger("mandiq.auth")
 
@@ -40,6 +28,7 @@ def create_access_token(user_id: int) -> str:
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+
 def decode_access_token(token: str) -> Optional[int]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -50,6 +39,7 @@ def decode_access_token(token: str) -> Optional[int]:
     except jwt.InvalidTokenError:
         log.warning("Invalid token")
         return None
+
 
 def get_current_user_id(authorization: Optional[str] = Header(None)) -> int:
     if not authorization:
@@ -65,6 +55,7 @@ def get_current_user_id(authorization: Optional[str] = Header(None)) -> int:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return user_id
 
+
 def get_current_user(user_id: int = Depends(get_current_user_id)) -> Dict[str, Any]:
     db = MandiDB()
     user = db.get_user_by_id(user_id)
@@ -72,61 +63,47 @@ def get_current_user(user_id: int = Depends(get_current_user_id)) -> Dict[str, A
         raise HTTPException(status_code=401, detail="User session not found")
     return user
 
-def _get_api_key() -> str:
-    return os.environ.get("FAST2SMS_API_KEY", "")
 
 def send_otp(mobile_number: str, otp: str) -> bool:
-    """Send OTP via 2Factor.in — no DLT needed, works immediately."""
+    """
+    Modular OTP sending function. Sends generated OTP to user's mobile number
+    using the Renflair SMS gateway.
+    """
     import requests
+    banner = f"""
+============================================================
+  📱 [MandiQ OTP SERVICE] Generated OTP for +91 {mobile_number}:
+  👉  {otp}  👈
+  [Expires in 5 minutes]
+============================================================
+"""
+    print(banner, flush=True)
 
-    api_key = os.environ.get("TWOFACTOR_API_KEY", "")
-    if not api_key:
-        print(f"\n{'='*50}\n  📱 OTP for +91 {mobile_number}: {otp}\n  [TWOFACTOR_API_KEY not set]\n{'='*50}\n")
-        return False
-
+    api_key = os.environ.get("RENFLAIR_API_KEY", "c98c2dfd199126b3fb530c3a684b9070")
+    url = f"https://sms.renflair.in/V1.php?API={api_key}&PHONE={mobile_number}&OTP={otp}"
     try:
-        url = f"https://2factor.in/API/V1/{api_key}/SMS/{mobile_number}/{otp}"
         resp = requests.get(url, timeout=10)
-        data = resp.json()
-        log.info(f"2Factor response: {data}")
-        if data.get("Status") == "Success":
-            log.info(f"✓ OTP sent to +91 {mobile_number} via 2Factor")
-            return True
-        log.warning(f"2Factor failed: {data}")
+        log.info(f"OTP SMS request sent for {mobile_number}. Response: {resp.text}")
+        return resp.status_code == 200
     except Exception as e:
-        log.error(f"2Factor exception: {e}")
-
-    # Console fallback
-    print(f"\n{'='*50}\n  📱 OTP for +91 {mobile_number}: {otp}\n  [SMS failed — use this]\n{'='*50}\n")
-    return False
+        log.error(f"Failed to send OTP SMS via Renflair: {e}")
+        return False
 
 
-def send_sms(mobile_number: str, message: str) -> bool:
-    """Send general SMS via Fast2SMS Quick SMS route (uses credits)."""
+def send_sms(mobile_number: str, message: str, cname: str = "Kisan", oid: int = 0) -> bool:
+    """Send alert/general SMS via Renflair SMS gateway V3.php template."""
     import requests
-    api_key = _get_api_key()
-    if not api_key or api_key == "your_fast2sms_api_key_here":
-        print(f"\n[SMS - NO API KEY] To {mobile_number}: {message}\n")
-        return False
+    import urllib.parse
+    api_key = os.environ.get("RENFLAIR_API_KEY", "c98c2dfd199126b3fb530c3a684b9070")
+    
+    # URL encode the parameters for safety
+    encoded_cname = urllib.parse.quote(cname)
+    url = f"https://sms.renflair.in/V3.php?API={api_key}&PHONE={mobile_number}&OID={oid}&CNAME={encoded_cname}"
+    
     try:
-        resp = requests.post(
-            "https://www.fast2sms.com/dev/bulkV2",
-            headers={"authorization": api_key, "Content-Type": "application/json"},
-            json={
-                "route": "q",
-                "message": message,
-                "language": "english",
-                "flash": 0,
-                "numbers": mobile_number,
-            },
-            timeout=10,
-        )
-        data = resp.json()
-        if data.get("return"):
-            log.info(f"SMS sent to {mobile_number}")
-            return True
-        log.warning(f"Fast2SMS error: {data}")
-        return False
+        resp = requests.get(url, timeout=10)
+        log.info(f"Alert SMS sent to {mobile_number} using V3.php. Response: {resp.text}")
+        return resp.status_code == 200
     except Exception as e:
-        log.error(f"SMS send failed: {e}")
+        log.error(f"Failed to send alert SMS via Renflair V3.php: {e}")
         return False

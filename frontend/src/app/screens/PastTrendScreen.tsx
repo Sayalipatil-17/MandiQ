@@ -17,8 +17,8 @@ const CROPS = [
 ];
 
 const MARKETS = [
-  { value: 'Azadpur APMC', short: 'Azadpur' },
-  { value: 'Keshopur APMC', short: 'Keshopur' },
+  { value: 'Azadpur APMC', shortKey: 'mandi.azadpur.short' },
+  { value: 'Keshopur APMC', shortKey: 'mandi.keshopur.short' },
 ];
 
 const PERIODS = [
@@ -28,7 +28,7 @@ const PERIODS = [
 
 export function PastTrendScreen() {
   const nav = useNavigate();
-  const { t } = useT();
+  const { t, lang } = useT();
   const [crop, setCrop] = useState(localStorage.getItem('selectedCrop') || 'Tomato');
   const [market, setMarket] = useState(localStorage.getItem('selectedMarket') || 'Azadpur APMC');
   const [period, setPeriod] = useState(30);
@@ -61,7 +61,7 @@ export function PastTrendScreen() {
   const marketObj = MARKETS.find(m => m.value === market)!;
 
   const chartData = history.map(h => ({
-    date: new Date(h.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    date: new Date(h.date).toLocaleDateString(lang === 'pa' ? 'pa-IN' : lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short' }),
     price: Math.round(h.modal_price),
   }));
 
@@ -80,7 +80,7 @@ export function PastTrendScreen() {
   const trend7 = last7.length > 1
     ? last7[last7.length - 1].modal_price - last7[0].modal_price : 0;
 
-  const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
+  const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString(lang === 'pa' ? 'pa-IN' : lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN', { day: 'numeric', month: 'short' }) : '';
 
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-24 max-w-md mx-auto mq-fadein">
@@ -113,7 +113,7 @@ export function PastTrendScreen() {
           {MARKETS.map(m => (
             <button key={m.value} onClick={() => setMarket(m.value)}
               className={`py-2 rounded-xl text-sm font-medium border-2 transition-all ${market === m.value ? 'bg-white text-[#2d6a3e] border-white' : 'bg-white/15 text-white border-white/20'}`}>
-              {m.short}
+              {t(m.shortKey)}
             </button>
           ))}
         </div>
@@ -165,7 +165,7 @@ export function PastTrendScreen() {
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className="w-5 h-5 text-[#2d6a3e]" />
                 <p className="font-semibold text-gray-800">{t('trend.priceHistory')}</p>
-                <span className="ml-auto text-xs text-gray-400">{cropObj?.emoji} {marketObj?.short}</span>
+                <span className="ml-auto text-xs text-gray-400">{cropObj?.emoji} {t(marketObj?.shortKey || '')}</span>
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={chartData}>

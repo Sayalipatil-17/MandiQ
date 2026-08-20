@@ -7,7 +7,7 @@ import { Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Area, AreaChart, Refe
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
 import { mandiApi, type Prediction, type PriceRecord } from '../../mandiq-api';
-import { useT } from '../../i18n';
+import { useT, cropName } from '../../i18n';
 
 const CROP_ICONS: Record<string, string> = {
   Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿',
@@ -15,11 +15,11 @@ const CROP_ICONS: Record<string, string> = {
 };
 
 const ML: Record<string, string> = {
-  'Azadpur APMC': 'Azadpur Mandi',
-  'Keshopur APMC': 'Keshopur Mandi',
+  'Azadpur APMC': 'mandi.azadpur',
+  'Keshopur APMC': 'mandi.keshopur',
 };
 
-function wd(d: string) { return new Date(d).toLocaleDateString('en-US', { weekday: 'short' }); }
+function wd(d: string, lang: string) { return new Date(d).toLocaleDateString(lang === 'pa' ? 'pa-IN' : lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN', { weekday: 'short' }); }
 
 const CustomDot = (props: any) => {
   const { cx, cy, payload, bestDay } = props;
@@ -34,14 +34,14 @@ const CustomDot = (props: any) => {
 };
 
 export function PredictionScreen() {
-  const nav = useNavigate(); const { t } = useT();
+  const nav = useNavigate(); const { t, lang } = useT();
   const [fb, setFb] = useState<'up' | 'down' | null>(null);
   const [cm, setCm] = useState('');
   const [cmErr, setCmErr] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const crop = localStorage.getItem('selectedCrop') || 'Tomato';
   const mkt = localStorage.getItem('selectedMarket') || 'Azadpur APMC';
-  const ml = ML[mkt] || mkt;
+  const ml = ML[mkt] ? t(ML[mkt]) : mkt;
   const [ld, setLd] = useState(true);
   const [er, setEr] = useState<string | null>(null);
   const [hist, setHist] = useState<PriceRecord[]>([]);
@@ -62,7 +62,7 @@ export function PredictionScreen() {
 
   const tp = hist.length ? Math.round(hist[hist.length - 1].modal_price) : 0;
   const cd = preds.map(p => ({
-    day: wd(p.date),
+    day: wd(p.date, lang),
     price: Math.round(p.predicted_price),
     lower: Math.round(p.lower_bound),
     upper: Math.round(p.upper_bound),
@@ -70,7 +70,7 @@ export function PredictionScreen() {
 
   let bp = tp, bd = '', bi = -1;
   preds.forEach((p, i) => {
-    if (Math.round(p.predicted_price) > bp) { bp = Math.round(p.predicted_price); bd = wd(p.date); bi = i; }
+    if (Math.round(p.predicted_price) > bp) { bp = Math.round(p.predicted_price); bd = wd(p.date, lang); bi = i; }
   });
 
   const ac = preds.length ? Math.round(preds.reduce((s, p) => s + p.confidence, 0) / preds.length) : 0;
@@ -79,14 +79,14 @@ export function PredictionScreen() {
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#1e5631] via-[#2d6a3e] to-[#16a34a] px-6 pt-8 pb-6 rounded-b-[2rem] shadow-lg sticky top-0 z-10">
+      <div className="mq-header px-6 pt-8 pb-6 rounded-b-[2.5rem] shadow-lg sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button onClick={() => nav('/home')} className="w-9 h-9 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center border border-white/30">
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
             <h2 className="text-xl font-bold text-white">{t('pred.title')}</h2>
-            <p className="text-white/60 text-xs">AI-powered price forecast</p>
+            <p className="text-white/60 text-xs">{t('pred.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@ export function PredictionScreen() {
               {CROP_ICONS[crop] || '🌱'}
             </div>
             <div>
-              <p className="font-semibold text-gray-800">{crop}</p>
+              <p className="font-semibold text-gray-800">{cropName(crop, t)}</p>
               <p className="text-xs text-gray-400">{t('pred.selectedCrop')}</p>
             </div>
           </div>
@@ -128,15 +128,15 @@ export function PredictionScreen() {
           {/* Current Price Banner */}
           <div className="bg-gradient-to-br from-[#1e5631] to-[#2d6a3e] rounded-2xl p-5 text-white flex items-center justify-between">
             <div>
-              <p className="text-white/70 text-xs mb-1">Current Price</p>
+              <p className="text-white/70 text-xs mb-1">{t('pred.currentPrice')}</p>
               <p className="text-3xl font-bold">₹{tp.toLocaleString()}</p>
-              <p className="text-white/60 text-xs mt-1">per quintal</p>
+              <p className="text-white/60 text-xs mt-1">{t('common.perQuintal')}</p>
             </div>
             {bp > tp && (
               <div className="text-right">
-                <p className="text-white/70 text-xs mb-1">Best Forecast</p>
+                <p className="text-white/70 text-xs mb-1">{t('pred.bestForecast')}</p>
                 <p className="text-2xl font-bold text-[#4ade80]">₹{bp.toLocaleString()}</p>
-                <p className="text-white/60 text-xs mt-1">on {bd}</p>
+                <p className="text-white/60 text-xs mt-1">{t('pred.onDay').replace('{day}', bd)}</p>
               </div>
             )}
           </div>
@@ -165,9 +165,9 @@ export function PredictionScreen() {
                 <Tooltip
                   contentStyle={{ background: '#fff', border: '1px solid #f0f0ee', borderRadius: '12px', padding: '10px 14px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                   formatter={(v: number, n: string) => {
-                    if (n === 'upper') return [`₹${v.toLocaleString()}`, 'Upper bound'];
-                    if (n === 'lower') return [`₹${v.toLocaleString()}`, 'Lower bound'];
-                    return [`₹${v.toLocaleString()}`, 'Predicted Price'];
+                    if (n === 'upper') return [`₹${v.toLocaleString()}`, t('pred.upperBound')];
+                    if (n === 'lower') return [`₹${v.toLocaleString()}`, t('pred.lowerBound')];
+                    return [`₹${v.toLocaleString()}`, t('pred.predictedPrice')];
                   }}
                 />
                 {/* CI Band — upper fill */}
@@ -220,7 +220,7 @@ export function PredictionScreen() {
               </div>
               <div>
                 <p className="font-semibold text-gray-800">{t('pred.demand')}</p>
-                <p className="text-xs text-gray-400">Seasonal market analysis</p>
+                <p className="text-xs text-gray-400">{t('pred.seasonalAnalysis')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 mb-2">
@@ -240,7 +240,7 @@ export function PredictionScreen() {
               </div>
               <div>
                 <p className="font-semibold text-gray-800">{t('pred.weatherImpact')}</p>
-                <p className="text-xs text-gray-400">Producing region + Delhi</p>
+                <p className="text-xs text-gray-400">{t('pred.weatherRegion')}</p>
               </div>
             </div>
             <p className="text-sm text-gray-400">{t('pred.weatherText')}</p>
@@ -254,7 +254,7 @@ export function PredictionScreen() {
               </div>
               <div>
                 <p className="font-semibold text-gray-800">{t('pred.confidence')}</p>
-                <p className="text-xs text-gray-400">Model prediction reliability</p>
+                <p className="text-xs text-gray-400">{t('pred.reliability')}</p>
               </div>
             </div>
 
