@@ -57,16 +57,12 @@ export async function showLocalNotification(title: string, body: string) {
   if (isNative()) {
     try {
       const { LocalNotifications } = await import('@capacitor/local-notifications');
-      const perm = await LocalNotifications.checkPermissions();
-      if (perm.display !== 'granted') {
-        await LocalNotifications.requestPermissions();
-      }
       await LocalNotifications.schedule({
         notifications: [{
           id: Math.floor(Math.random() * 100000) + 1,
           title,
           body,
-          schedule: { at: new Date(Date.now() + 300) },
+          channelId: 'mandi_alerts',
           smallIcon: 'ic_stat_mandiq',
           iconColor: '#2d6a3e',
         }]
