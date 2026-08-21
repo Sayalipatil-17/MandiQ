@@ -1,13 +1,22 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Sprout, ChevronRight } from 'lucide-react';
 import { useT, type Lang } from '../../i18n';
+import { useAuth } from '../../AuthContext';
 import bgImage from '../../assets/mandiq-bg.png';
 
 const BG_IMAGE = bgImage;
 
 export function SplashScreen() {
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useAuth();
   const { lang, setLang, t } = useT();
+
+  useEffect(() => {
+    if (isAuthenticated || token || localStorage.getItem('mandiq_token')) {
+      navigate('/home', { replace: true });
+    }
+  }, [isAuthenticated, token, navigate]);
 
   const languages: { code: Lang; label: string }[] = [
     { code: 'en', label: 'English' },

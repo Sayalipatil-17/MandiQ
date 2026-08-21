@@ -5,6 +5,7 @@ import { BottomNav } from '../components/BottomNav';
 import { SupportChat } from '../components/SupportChat';
 import { Fireworks } from '../components/Fireworks';
 import { useT, type Lang, cropName } from '../../i18n';
+import { useAuth } from '../../AuthContext';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
@@ -13,6 +14,7 @@ const STARS = [1, 2, 3, 4, 5];
 
 export function ProfileScreen() {
   const nav = useNavigate();
+  const { logout } = useAuth();
   const { t, lang, setLang } = useT();
   const [user, setUser] = useState<any>(null);
   const [showAbout, setShowAbout] = useState(false);
@@ -65,9 +67,8 @@ export function ProfileScreen() {
   const crops = farmerDetails?.crops || [];
 
   function handleLogout() {
-    localStorage.removeItem('mandiq_token');
-    localStorage.removeItem('mandiq_user');
-    nav('/login');
+    logout();
+    nav('/login', { replace: true });
   }
 
   function openEdit() {

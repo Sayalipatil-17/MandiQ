@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Sprout, Phone, Loader2 } from 'lucide-react';
 import { mandiApi } from '../../mandiq-api';
 import { useT } from '../../i18n';
+import { useAuth } from '../../AuthContext';
 
 export function LoginScreen() {
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useAuth();
   const { t } = useT();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isAuthenticated || token || localStorage.getItem('mandiq_token')) {
+      navigate('/home', { replace: true });
+    }
+  }, [isAuthenticated, token, navigate]);
 
   async function handleSendOtp() {
     setLoading(true);
