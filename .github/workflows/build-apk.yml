@@ -45,13 +45,17 @@ jobs:
         env:
           VITE_API_URL: https://mandiq.onrender.com
 
-      # 6. google-services.json Secret se inject karo (agar available ho)
+      # 6. google-services.json Secret se inject karo (agar GitHub Secret configured hai)
       - name: Inject google-services.json
         env:
           GSERVICES: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -n "$GSERVICES" ]; then
+          if [ -n "$GSERVICES" ] && [[ "$GSERVICES" == *"project_info"* ]]; then
             echo "$GSERVICES" > frontend/android/app/google-services.json
+            echo "google-services.json injected successfully."
+          else
+            echo "GOOGLE_SERVICES_JSON secret not configured or invalid; skipping injection."
+            rm -f frontend/android/app/google-services.json
           fi
 
       # 7. Capacitor sync
