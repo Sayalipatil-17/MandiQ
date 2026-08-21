@@ -6,6 +6,9 @@ on:
       - 'v*'          # v1.0.0, v1.1.0 etc. tag push pe trigger hoga
   workflow_dispatch:   # manual trigger bhi kar sakte ho
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -42,9 +45,14 @@ jobs:
         env:
           VITE_API_URL: https://mandiq.onrender.com
 
-      # 6. google-services.json Secret se inject karo
+      # 6. google-services.json Secret se inject karo (agar available ho)
       - name: Inject google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > frontend/android/app/google-services.json
+        env:
+          GSERVICES: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GSERVICES" ]; then
+            echo "$GSERVICES" > frontend/android/app/google-services.json
+          fi
 
       # 7. Capacitor sync
       - name: Capacitor sync Android
