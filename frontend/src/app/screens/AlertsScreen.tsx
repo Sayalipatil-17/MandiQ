@@ -4,7 +4,7 @@ import { ArrowLeft, Bell, Target, TrendingUp, Trash2, CheckCircle, Loader2 } fro
 import { BottomNav } from '../components/BottomNav';
 import { SupportChat } from '../components/SupportChat';
 import { useT, cropName } from '../../i18n';
-import { showLocalNotification } from '../../onesignal';
+import { showLocalNotification, checkAndNotifyTriggeredAlerts } from '../../onesignal';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
@@ -100,6 +100,7 @@ export function AlertsScreen() {
       console.error("GET triggered alerts exception:", err);
     }
     setNotifLoading(false);
+    checkAndNotifyTriggeredAlerts().catch(() => {});
   }
 
   /** Push permission maango — alert banane se PEHLE, taaki instant

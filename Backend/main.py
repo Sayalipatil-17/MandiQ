@@ -60,6 +60,7 @@ def send_push(title: str, body: str, user_id: Optional[int] = None):
     }
     if user_id is not None:
         payload["include_aliases"] = {"external_id": [str(user_id)]}
+        payload["include_external_user_ids"] = [str(user_id)]
         payload["target_channel"] = "push"
     else:
         payload["included_segments"] = ["All"]
@@ -91,69 +92,82 @@ def send_push(title: str, body: str, user_id: Optional[int] = None):
         log.warning(f"OneSignal push failed: {e}")
 
 
-def _check_all_alerts():
-    """Har 9AM aur 6PM: check karo kisi ka alert trigger hua ya nahi."""
-    alerts = db.get_all_active_alerts()
-    checked: dict = {}
-    for alert in alerts:
-        # Fetch user name for the SMS template
-        user = db.get_user_by_id(alert["user_id"])
-        user_name = user.get("name") if (user and user.get("name")) else "Kisan"
-        import re
-        clean_name = re.sub(r'[^a-zA-Z0-9]', '', user_name)
-        cname_val = f"{clean_name}{alert['crop']}"
-
-        key = f"{alert['crop']}|{alert['market']}"
-        if key not in checked:
-            records = db.get_data(alert["crop"], alert["market"])
-            checked[key] = records[-1]["modal_price"] if records else None
-        current_price = checked[key]
-        if current_price is None:
-            continue
-        target = alert["target_price"]
+def _evaluate_alert(alert: dict, checked_cache: dict) -> bool:
+    """Ek alert ka check karke, condition match hone par trigger & push send karo."""
+    try:
         direction = alert.get("direction", "above")
+        crop = alert["crop"]
+        market = alert["market"]
+        key = f"{crop}|{market}"
+
+        if key not in checked_cache:
+            records = db.get_data(crop, market)
+            checked_cache[key] = records[-1]["modal_price"] if records else None
+        current_price = checked_cache[key]
+        if current_price is None:
+            return False
+
+        target = alert.get("target_price", 0.0)
         max_price = alert.get("max_price")
 
         # Best Day Alert: prediction run karo, aaj best sell day hai kya
         if direction == "best_day":
-            try:
-                if not predictor.is_trained(alert["crop"], alert["market"]):
-                    continue
-                records = db.get_data(alert["crop"], alert["market"])
-                if not records:
-                    continue
-                preds = predictor.predict(
-                    commodity=alert["crop"], market=alert["market"],
-                    historical_data=records, days_ahead=7, model="reversion"
-                )
-                if not preds:
-                    continue
-                best = max(preds, key=lambda p: p.get("predicted_price", 0))
-                best_date = best.get("date", "")[:10]
-                today_str = __import__("datetime").date.today().isoformat()
-                if best_date == today_str:
-                    db.mark_alert_triggered(alert["id"])
-                    bp = round(best.get("predicted_price", current_price))
-                    title, body = build_message("best_day", alert["crop"], alert["market"], bp, bp)
-                    send_push(title, body, user_id=alert["user_id"])
-                    log.info(f"Best Day Alert fired: {alert['crop']} best day = {best_date}, price={bp}")
-            except Exception as e:
-                log.warning(f"Best Day check failed for {alert['crop']}: {e}")
-            continue
+            if not predictor.is_trained(crop, market):
+                return False
+            records = db.get_data(crop, market)
+            if not records:
+                return False
+            preds = predictor.predict(
+                commodity=crop, market=market,
+                historical_data=records, days_ahead=7, model="reversion"
+            )
+            if not preds:
+                return False
+            best = max(preds, key=lambda p: p.get("predicted_price", 0))
+            best_date = best.get("date", "")[:10]
+            today_str = datetime.date.today().isoformat()
+            if best_date == today_str:
+                db.mark_alert_triggered(alert["id"])
+                bp = round(best.get("predicted_price", current_price))
+                title, body = build_message("best_day", crop, market, bp, bp)
+                send_push(title, body, user_id=alert["user_id"])
+                log.info(f"Best Day Alert fired: {crop} best day = {best_date}, price={bp}")
+                return True
+            return False
 
         if direction == "range" and max_price:
             triggered = target <= current_price <= max_price
         else:
             triggered = (direction == "above" and current_price >= target) or \
                         (direction == "below" and current_price <= target)
+
         if triggered:
             db.mark_alert_triggered(alert["id"])
             msg_direction = "above" if direction == "range" else direction
-            title, body = build_message(
-                msg_direction, alert["crop"], alert["market"], current_price, target
-            )
+            title, body = build_message(msg_direction, crop, market, current_price, target)
             send_push(title, body, user_id=alert["user_id"])
-            log.info(f"Alert triggered & stored in-app: {alert['crop']} @ {alert['market']} = {current_price}")
+            log.info(f"Alert triggered & stored in-app: {crop} @ {market} = {current_price} (target: {target})")
+            return True
+        return False
+    except Exception as e:
+        log.warning(f"Error evaluating alert {alert.get('id')}: {e}")
+        return False
+
+
+def _check_all_alerts():
+    """Har 9AM aur 6PM: check karo kisi ka alert trigger hua ya nahi."""
+    alerts = db.get_all_active_alerts()
+    checked: dict = {}
+    for alert in alerts:
+        _evaluate_alert(alert, checked)
+
+
+def _check_alerts_for_user(user_id: int):
+    """Specific user ke active alerts evaluate karo."""
+    active_alerts = db.get_alerts_by_status(user_id, 0)
+    checked: dict = {}
+    for alert in active_alerts:
+        _evaluate_alert(alert, checked)
 
 def _daily_scrape():
     """Roz subah 6 baje: sirf aaj ka data scrape karo, train mat karo."""
@@ -719,6 +733,10 @@ def _fire_alert_if_matched(alert_id: int, user_id: int, crop: str, market: str,
 @app.get("/api/alerts")
 def api_get_alerts(triggered: int = Query(0, ge=0, le=1), authorization: Optional[str] = Header(None)):
     user = _get_user_from_token(authorization)
+    try:
+        _check_alerts_for_user(user["id"])
+    except Exception as e:
+        log.warning(f"Failed checking alerts for user {user['id']}: {e}")
     return db.get_alerts_by_status(user["id"], triggered)
 
 @app.delete("/api/alerts/{alert_id}")

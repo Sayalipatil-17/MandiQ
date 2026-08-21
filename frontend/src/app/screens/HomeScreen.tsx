@@ -8,6 +8,8 @@ import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianG
 import { mandiApi, type Prediction, type PriceRecord } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
 
+import { checkAndNotifyTriggeredAlerts } from '../../onesignal';
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 const MARKETS = [
@@ -184,6 +186,9 @@ export function HomeScreen() {
         }
       })
       .catch(() => {});
+
+    // Check & trigger native Android notification for any new triggered alerts
+    checkAndNotifyTriggeredAlerts().catch(() => {});
   }, []);
 
   const [selectedMarket, setSelectedMarket] = useState(localStorage.getItem('selectedMarket') || '');
