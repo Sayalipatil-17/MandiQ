@@ -64,16 +64,25 @@ def send_push(title: str, body: str, user_id: Optional[int] = None):
     else:
         payload["included_segments"] = ["All"]
 
-    try:
-        r = requests.post(
+    # Nayi OneSignal keys "Key <k>" maangti hain, purani legacy keys "Basic <k>".
+    # Pehla scheme auth se reject ho to doosra try karo.
+    def _post(scheme: str):
+        return requests.post(
             "https://onesignal.com/api/v1/notifications",
             headers={
-                "Authorization": f"Basic {ONESIGNAL_REST_KEY}",
+                "Authorization": f"{scheme} {ONESIGNAL_REST_KEY}",
                 "Content-Type": "application/json",
             },
             json=payload,
-            timeout=10,
+            timeout=15,
         )
+
+    try:
+        r = _post("Key")
+        if r.status_code in (401, 403):
+            log.info("OneSignal: 'Key' scheme rejected, retrying with 'Basic'")
+            r = _post("Basic")
+
         if r.status_code >= 300:
             log.warning(f"OneSignal push rejected [{r.status_code}]: {r.text[:300]}")
         else:
