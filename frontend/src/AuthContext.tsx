@@ -21,6 +21,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+/** OneSignal ko bata do ye push kis farmer ka hai — targeted alerts ke liye. */
+function linkOneSignal(userId: number) {
+  const os = (window as any).OneSignalDeferred;
+  if (!os) return;
+  os.push(async (OneSignal: any) => {
+    try { await OneSignal.login(String(userId)); } catch {}
+  });
+}
+
+function unlinkOneSignal() {
+  const os = (window as any).OneSignalDeferred;
+  if (!os) return;
+  os.push(async (OneSignal: any) => {
+    try { await OneSignal.logout(); } catch {}
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('mandiq_token'));
@@ -34,7 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) setUser(await res.json());
+      if (res.ok) {
+        const u = await res.json();
+        setUser(u);
+        if (u?.id) linkOneSignal(u.id);
+      }
       else logout();
     } catch { logout(); }
   }
@@ -43,12 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('mandiq_token', newToken);
     setToken(newToken);
     setUser(newUser);
+    if (newUser?.id) linkOneSignal(newUser.id);
   }
 
   function logout() {
     localStorage.removeItem('mandiq_token');
     setToken(null);
     setUser(null);
+    unlinkOneSignal();
   }
 
   return (
