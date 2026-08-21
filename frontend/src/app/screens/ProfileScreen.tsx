@@ -123,7 +123,7 @@ export function ProfileScreen() {
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
       <Fireworks show={showFireworks} />
       {/* Header */}
-      <div className="mq-header px-6 py-8 rounded-b-[2.5rem]">
+      <div className="mq-header px-6 pb-8 rounded-b-[2.5rem]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/40">

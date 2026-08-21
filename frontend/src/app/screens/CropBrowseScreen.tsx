@@ -74,7 +74,7 @@ export function CropBrowseScreen() {
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white border-b border-gray-100 px-6 pb-4 sticky top-0 z-10 shadow-sm" style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 0.75rem), 2.25rem)' }}>
         <div className="flex items-center gap-4 mb-4">
           <button onClick={() => nav('/home')} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
             <ArrowLeft className="w-5 h-5 text-[#2d6a3e]" />

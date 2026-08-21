@@ -152,10 +152,16 @@
   box-shadow: 0 2px 8px rgba(232,105,42,0.22);
 }
 
-/* Green header gradient */
+/* Green header gradient with notification bar / status bar safe spacing */
 .mq-header {
   background: linear-gradient(150deg, #122B1F 0%, #1C4230 55%, #245438 100%);
   box-shadow: var(--shadow-header);
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 2.75rem) !important;
+}
+
+/* Status bar safe area utility */
+.mq-safe-top {
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 1rem), 2.5rem);
 }
 
 /* Skeleton loader */
