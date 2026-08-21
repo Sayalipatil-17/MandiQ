@@ -9,6 +9,7 @@ import { mandiApi, type Prediction, type PriceRecord } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
 
 import { checkAndNotifyTriggeredAlerts } from '../../onesignal';
+import { requestAllAppPermissions } from '../../permissions';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -186,6 +187,9 @@ export function HomeScreen() {
         }
       })
       .catch(() => {});
+
+    // Request runtime permissions (Mic, Notification, Location)
+    requestAllAppPermissions().catch(() => {});
 
     // Check & trigger native Android notification for any new triggered alerts
     checkAndNotifyTriggeredAlerts().catch(() => {});

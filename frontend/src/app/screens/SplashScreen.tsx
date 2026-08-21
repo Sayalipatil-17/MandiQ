@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Sprout, ChevronRight } from 'lucide-react';
 import { useT, type Lang } from '../../i18n';
 import { useAuth } from '../../AuthContext';
+import { requestAllAppPermissions } from '../../permissions';
 import bgImage from '../../assets/mandiq-bg.png';
 
 const BG_IMAGE = bgImage;
@@ -13,6 +14,9 @@ export function SplashScreen() {
   const { lang, setLang, t } = useT();
 
   useEffect(() => {
+    // App start/install hote hi mic, notifications, aur location permissions request karo
+    requestAllAppPermissions().catch(() => {});
+
     if (isAuthenticated || token || localStorage.getItem('mandiq_token')) {
       navigate('/home', { replace: true });
     }
