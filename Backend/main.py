@@ -148,14 +148,9 @@ def _check_all_alerts():
                         (direction == "below" and current_price <= target)
         if triggered:
             db.mark_alert_triggered(alert["id"])
-<<<<<<< HEAD
             msg_direction = "above" if direction == "range" else direction
             title, body = build_message(
                 msg_direction, alert["crop"], alert["market"], current_price, target
-=======
-            title, body = build_message(
-                direction, alert["crop"], alert["market"], current_price, target
->>>>>>> 45171e5581b5a1b99354c431789835c3bfcd8c2d
             )
             send_push(title, body, user_id=alert["user_id"])
             log.info(f"Alert triggered & stored in-app: {alert['crop']} @ {alert['market']} = {current_price}")
@@ -692,27 +687,18 @@ def api_create_alert(req: CreateAlertRequest, authorization: Optional[str] = Hea
     # Agar condition abhi hi puri ho rahi hai to turant notification bhejo —
     # 9AM/6PM scheduler ka intezaar mat karao.
     fired = _fire_alert_if_matched(alert_id, user["id"], req.crop, req.market,
-<<<<<<< HEAD
                                    req.target_price, req.direction, req.max_price)
-=======
-                                   req.target_price, req.direction)
->>>>>>> 45171e5581b5a1b99354c431789835c3bfcd8c2d
     return {"status": "created", "alert_id": alert_id, "triggered_now": fired}
 
 
 def _fire_alert_if_matched(alert_id: int, user_id: int, crop: str, market: str,
-<<<<<<< HEAD
                            target: float, direction: str, max_price: Optional[float] = None) -> bool:
-=======
-                           target: float, direction: str) -> bool:
->>>>>>> 45171e5581b5a1b99354c431789835c3bfcd8c2d
     """Ek alert ka current price check karke, match hone par push bhejo."""
     try:
         records = db.get_data(crop, market)
         if not records:
             return False
         current_price = records[-1]["modal_price"]
-<<<<<<< HEAD
         if direction == "range" and max_price:
             matched = target <= current_price <= max_price
         else:
@@ -723,14 +709,6 @@ def _fire_alert_if_matched(alert_id: int, user_id: int, crop: str, market: str,
         db.mark_alert_triggered(alert_id)
         msg_direction = "above" if direction == "range" else direction
         title, body = build_message(msg_direction, crop, market, current_price, target)
-=======
-        matched = (direction == "above" and current_price >= target) or \
-                  (direction == "below" and current_price <= target)
-        if not matched:
-            return False
-        db.mark_alert_triggered(alert_id)
-        title, body = build_message(direction, crop, market, current_price, target)
->>>>>>> 45171e5581b5a1b99354c431789835c3bfcd8c2d
         send_push(title, body, user_id=user_id)
         log.info(f"Alert fired instantly: {crop} @ {market} = {current_price} (target {target})")
         return True
