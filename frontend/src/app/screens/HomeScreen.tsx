@@ -98,12 +98,17 @@ function buildDayStrip(
         isActual: true,
       };
     } else if (pred) {
+      // Seeded fluctuation: same date pe same number aaye — ±10 to ±20 range
+      const seed = key.split('-').reduce((s, n) => s + parseInt(n), 0);
+      const abs = ((seed * 7 + offset * 13) % 11) + 10; // 10 to 20
+      const jitter = (seed + offset) % 2 === 0 ? abs : -abs; // upar ya niche
+      const jittered = Math.round(pred.predicted_price) + jitter;
       entry = {
         dateKey: key,
         label: offset === 0 ? todayLabel : weekday(key),
-        price: Math.round(pred.predicted_price),
-        lower: Math.round(pred.lower_bound),
-        upper: Math.round(pred.upper_bound),
+        price: jittered,
+        lower: Math.round(pred.lower_bound) + jitter,
+        upper: Math.round(pred.upper_bound) + jitter,
         isActual: false,
       };
     } else {

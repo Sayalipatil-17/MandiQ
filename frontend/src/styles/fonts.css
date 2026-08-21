@@ -1,32 +1,44 @@
-/* Font Stack */
+/* Font Stack
+   Teeno fonts ek hi stack mein. Browser per-character fallback karta hai:
+   Latin + digits → DM Sans, Devanagari → Noto Devanagari, Gurmukhi → Noto
+   Gurmukhi. Isliye language switch pe font-family badalne ki zaroorat nahi —
+   digits aur English words har language mein ek jaise dikhte hain. */
 :root {
-  --font-sans: 'DM Sans', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'DM Sans', 'Noto Sans Devanagari', 'Noto Sans Gurmukhi',
+               -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Per-language size scale.
+     Latin aur Indic scripts same px pe alag size ke dikhte hain — DM Sans
+     chhota lagta hai, Devanagari/Gurmukhi bade. Har language ka apna scale
+     hai taaki visually sab ek jaise dikhein.
+     Poori app rem-based hai, to root badalne se sab proportionally scale
+     hota hai — language badalne pe layout consistent rehta hai. */
+  --lang-scale: 1.08;
+  --lang-leading: 1.5;
 }
+
+/* All languages same scale — layout stable rahta hai language switch pe */
+html:lang(en) { --lang-scale: 1.08; --lang-leading: 1.5; }
+
+/* Devanagari/Gurmukhi — scale same, sirf leading extra for matras */
+html:lang(hi),
+html:lang(mr) { --lang-scale: 1.08; --lang-leading: 1.65; }
+
+html:lang(pa) { --lang-scale: 1.08; --lang-leading: 1.65; }
 
 body {
   font-family: var(--font-sans);
+  line-height: var(--lang-leading);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'kern' 1;
 }
 
-/* Hindi/Devanagari text - scale root font size slightly so Devnagari matches English visual weight */
-html:lang(hi), html:lang(mr), .text-hindi {
-  font-family: 'Noto Sans Devanagari', 'DM Sans', sans-serif;
-  font-size: 110%;
-  line-height: 1.6;
-}
-
-/* Punjabi text - scale root font size slightly so Gurmukhi matches English visual weight */
-html:lang(pa), .text-punjabi {
-  font-family: 'Noto Sans Gurmukhi', 'DM Sans', sans-serif;
-  font-size: 110%;
-  line-height: 1.6;
-}
-
-/* Price numbers — tabular, tight */
-.price-text {
+/* Price numbers — tabular, tight.
+   Hamesha DM Sans, taaki digits har language mein ek jaise dikhein. */
+.price-text,
+.mq-price {
   font-family: 'DM Sans', sans-serif;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;

@@ -1,0 +1,90 @@
+name: Build & Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'          # v1.0.0, v1.1.0 etc. tag push pe trigger hoga
+  workflow_dispatch:   # manual trigger bhi kar sakte ho
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Code checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Node.js setup
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # 3. Java setup (Android build ke liye)
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 4. Frontend dependencies install
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # 5. Frontend build
+      - name: Build frontend (Vite)
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_URL: https://mandiq.onrender.com
+
+      # 6. google-services.json Secret se inject karo
+      - name: Inject google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > frontend/android/app/google-services.json
+
+      # 7. Capacitor sync
+      - name: Capacitor sync Android
+        working-directory: frontend
+        run: npx cap sync android
+
+      # 8. APK build (debug — signing ke bina, seedha install hota hai)
+      - name: Build Debug APK
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # 9. APK rename with version
+      - name: Rename APK
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ]; then VERSION="dev"; fi
+          cp frontend/android/app/build/outputs/apk/debug/app-debug.apk MandiQ-${VERSION}.apk
+
+      # 10. GitHub Release create aur APK upload
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MandiQ-*.apk
+          name: "MandiQ ${{ github.ref_name }}"
+          body: |
+            ## MandiQ APK — ${{ github.ref_name }}
+
+            ### Install kaise karein:
+            1. APK file download karo
+            2. Phone mein **Settings → Security → Unknown Sources** allow karo
+            3. APK install karo
+
+            ### Is version mein:
+            - AI price prediction (7 din)
+            - Price & Best Day alerts (bina Google Play ke)
+            - Mandi comparison
+            - Hindi / Marathi / Punjabi / English support
+
+            > ⚠️ Yeh debug APK hai — Google Play certified nahi hai, sidha install hota hai.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

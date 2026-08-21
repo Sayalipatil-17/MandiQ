@@ -112,12 +112,45 @@ def _check_all_alerts():
             continue
         target = alert["target_price"]
         direction = alert.get("direction", "above")
-        triggered = (direction == "above" and current_price >= target) or \
-                    (direction == "below" and current_price <= target)
+        max_price = alert.get("max_price")
+
+        # Best Day Alert: prediction run karo, aaj best sell day hai kya
+        if direction == "best_day":
+            try:
+                if not predictor.is_trained(alert["crop"], alert["market"]):
+                    continue
+                records = db.get_data(alert["crop"], alert["market"])
+                if not records:
+                    continue
+                preds = predictor.predict(
+                    commodity=alert["crop"], market=alert["market"],
+                    historical_data=records, days_ahead=7, model="reversion"
+                )
+                if not preds:
+                    continue
+                best = max(preds, key=lambda p: p.get("predicted_price", 0))
+                best_date = best.get("date", "")[:10]
+                today_str = __import__("datetime").date.today().isoformat()
+                if best_date == today_str:
+                    db.mark_alert_triggered(alert["id"])
+                    bp = round(best.get("predicted_price", current_price))
+                    title, body = build_message("best_day", alert["crop"], alert["market"], bp, bp)
+                    send_push(title, body, user_id=alert["user_id"])
+                    log.info(f"Best Day Alert fired: {alert['crop']} best day = {best_date}, price={bp}")
+            except Exception as e:
+                log.warning(f"Best Day check failed for {alert['crop']}: {e}")
+            continue
+
+        if direction == "range" and max_price:
+            triggered = target <= current_price <= max_price
+        else:
+            triggered = (direction == "above" and current_price >= target) or \
+                        (direction == "below" and current_price <= target)
         if triggered:
             db.mark_alert_triggered(alert["id"])
+            msg_direction = "above" if direction == "range" else direction
             title, body = build_message(
-                direction, alert["crop"], alert["market"], current_price, target
+                msg_direction, alert["crop"], alert["market"], current_price, target
             )
             send_push(title, body, user_id=alert["user_id"])
             log.info(f"Alert triggered & stored in-app: {alert['crop']} @ {alert['market']} = {current_price}")
@@ -160,11 +193,11 @@ async def lifespan(app):
     else:
         days_old = 999  # koi model nahi → zaroor train karo
 
-    if days_old >= 1:
+    if days_old >= 7:
         log.info(f"Models {days_old:.1f} din purane hain — weekly training shuru...")
         subprocess.Popen([sys.executable, "run_pipeline.py", "--crop", "all"], cwd=str(BASE_DIR))
     else:
-        log.info(f"Models {days_old:.1f} din purane hain — sirf scrape chalayenge")
+        log.info(f"Models {days_old:.1f} din purane hain — sirf aaj ka scrape chalayenge")
         subprocess.Popen([sys.executable, "daily_scrape.py"], cwd=str(BASE_DIR))
 
     yield
@@ -268,8 +301,9 @@ class PredictRequest(BaseModel):
 class CreateAlertRequest(BaseModel):
     crop: str = Field(..., min_length=2, max_length=100)
     market: str = Field("Azadpur APMC", min_length=2, max_length=100)
-    target_price: float = Field(..., gt=0.0)
-    direction: Literal["above", "below"] = "above"
+    target_price: float = Field(0.0, ge=0.0)
+    direction: Literal["above", "below", "range", "best_day"] = "above"
+    max_price: Optional[float] = None  # only for direction="range"
 
 class RatingRequest(BaseModel):
     stars: int = Field(..., ge=1, le=5)
@@ -653,24 +687,28 @@ def api_create_alert(req: CreateAlertRequest, authorization: Optional[str] = Hea
     # Agar condition abhi hi puri ho rahi hai to turant notification bhejo —
     # 9AM/6PM scheduler ka intezaar mat karao.
     fired = _fire_alert_if_matched(alert_id, user["id"], req.crop, req.market,
-                                   req.target_price, req.direction)
+                                   req.target_price, req.direction, req.max_price)
     return {"status": "created", "alert_id": alert_id, "triggered_now": fired}
 
 
 def _fire_alert_if_matched(alert_id: int, user_id: int, crop: str, market: str,
-                           target: float, direction: str) -> bool:
+                           target: float, direction: str, max_price: Optional[float] = None) -> bool:
     """Ek alert ka current price check karke, match hone par push bhejo."""
     try:
         records = db.get_data(crop, market)
         if not records:
             return False
         current_price = records[-1]["modal_price"]
-        matched = (direction == "above" and current_price >= target) or \
-                  (direction == "below" and current_price <= target)
+        if direction == "range" and max_price:
+            matched = target <= current_price <= max_price
+        else:
+            matched = (direction == "above" and current_price >= target) or \
+                      (direction == "below" and current_price <= target)
         if not matched:
             return False
         db.mark_alert_triggered(alert_id)
-        title, body = build_message(direction, crop, market, current_price, target)
+        msg_direction = "above" if direction == "range" else direction
+        title, body = build_message(msg_direction, crop, market, current_price, target)
         send_push(title, body, user_id=user_id)
         log.info(f"Alert fired instantly: {crop} @ {market} = {current_price} (target {target})")
         return True
@@ -688,6 +726,30 @@ def api_delete_alert(alert_id: int, authorization: Optional[str] = Header(None))
     user = _get_user_from_token(authorization)
     db.delete_alert(alert_id, user["id"])
     return {"status": "deleted"}
+
+class BestDayToggleRequest(BaseModel):
+    crops: List[str]
+    market: str = "Azadpur APMC"
+
+@app.post("/api/alerts/best-day/on")
+def api_best_day_on(req: BestDayToggleRequest, authorization: Optional[str] = Header(None)):
+    """Toggle ON: user ke crops ke liye best_day alerts create karo."""
+    user = _get_user_from_token(authorization)
+    mobile = user.get("mobile") or user.get("mobile_number", "")
+    # Pehle purane best_day alerts delete karo
+    db.delete_best_day_alerts(user["id"])
+    ids = []
+    for crop in req.crops:
+        aid = db.create_alert(user["id"], mobile, crop, req.market, 0.0, "best_day")
+        ids.append(aid)
+    return {"status": "on", "alert_ids": ids}
+
+@app.delete("/api/alerts/best-day/off")
+def api_best_day_off(authorization: Optional[str] = Header(None)):
+    """Toggle OFF: user ke saare best_day alerts delete karo."""
+    user = _get_user_from_token(authorization)
+    db.delete_best_day_alerts(user["id"])
+    return {"status": "off"}
 
 @app.post("/api/alerts/check")
 def api_check_alerts(background_tasks: BackgroundTasks):

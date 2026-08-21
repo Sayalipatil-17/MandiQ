@@ -414,6 +414,10 @@ class MandiSQLiteDB:
         with self._conn() as con:
             con.execute("DELETE FROM price_alerts WHERE id = ? AND user_id = ?", (alert_id, user_id))
 
+    def delete_best_day_alerts(self, user_id: int):
+        with self._conn() as con:
+            con.execute("DELETE FROM price_alerts WHERE user_id = ? AND direction = 'best_day'", (user_id,))
+
     def get_all_active_alerts(self) -> List[Dict]:
         with self._conn() as con:
             rows = con.execute(
@@ -859,6 +863,9 @@ class MandiMongoDB:
     def delete_alert(self, alert_id: int, user_id: int):
         self.db.price_alerts.delete_one({"id": int(alert_id), "user_id": int(user_id)})
 
+    def delete_best_day_alerts(self, user_id: int):
+        self.db.price_alerts.delete_many({"user_id": int(user_id), "direction": "best_day"})
+
     def get_all_active_alerts(self) -> List[Dict]:
         cursor = self.db.price_alerts.find({"triggered": 0})
         results = []
@@ -1010,6 +1017,9 @@ class MandiDB:
 
     def delete_alert(self, alert_id: int, user_id: int):
         self._impl.delete_alert(alert_id, user_id)
+
+    def delete_best_day_alerts(self, user_id: int):
+        self._impl.delete_best_day_alerts(user_id)
 
     def get_all_active_alerts(self) -> List[Dict]:
         return self._impl.get_all_active_alerts()

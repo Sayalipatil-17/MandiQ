@@ -4,6 +4,7 @@ import { ArrowLeft, Bell, Target, TrendingUp, Trash2, CheckCircle, Loader2 } fro
 import { BottomNav } from '../components/BottomNav';
 import { SupportChat } from '../components/SupportChat';
 import { useT, cropName } from '../../i18n';
+import { showLocalNotification } from '../../onesignal';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
@@ -30,9 +31,48 @@ export function AlertsScreen() {
   const [saving, setSaving] = useState(false);
   const [added, setAdded] = useState(false);
   const [bestDay, setBestDay] = useState(() => localStorage.getItem('bestDayAlert') === 'on');
+  const [currentPrice, setCurrentPrice] = useState(0);
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(null);
   const [notifDenied, setNotifDenied] = useState(false);
+  const [userCrops, setUserCrops] = useState<string[]>(() => {
+    const saved = localStorage.getItem('bestDayCrops');
+    if (saved) return JSON.parse(saved);
+    const single = localStorage.getItem('selectedCrop');
+    return single ? [single] : ['Tomato'];
+  });
 
-  useEffect(() => { loadAlerts(); }, []);
+  // Jab bhi crop badle, uska current price fetch karo
+  useEffect(() => {
+    setCurrentPrice(0); setPriceRange(null);
+    fetch(`${BASE_URL}/api/history?commodity=${encodeURIComponent(selectedCrop)}&market=Azadpur%20APMC`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then((res: any) => {
+        const arr = Array.isArray(res) ? res : (res?.data ?? []);
+        if (arr.length) {
+          setCurrentPrice(Math.round(arr[arr.length - 1].modal_price));
+          const prices = arr.map((r: any) => r.modal_price);
+          setPriceRange({ min: Math.round(Math.min(...prices)), max: Math.round(Math.max(...prices)) });
+        }
+      })
+      .catch(() => {});
+  }, [selectedCrop]);
+
+  useEffect(() => {
+    loadAlerts();
+    // Profile se crops fetch karo
+    const token = localStorage.getItem('mandiq_token');
+    if (!token) return;
+    fetch(`${BASE_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(u => {
+        const crops: string[] = u?.farmer_details?.crops;
+        if (Array.isArray(crops) && crops.length > 0) {
+          setUserCrops(crops);
+          localStorage.setItem('bestDayCrops', JSON.stringify(crops));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function loadAlerts() {
     setLoading(true);
@@ -84,6 +124,7 @@ export function AlertsScreen() {
   async function createAlert() {
     const p = parseFloat(tp);
     if (!p || p <= 0) return;
+    if (priceRange && (p < priceRange.min || p > priceRange.max)) return;
     setSaving(true);
     await ensurePushPermission();
     try {
@@ -97,6 +138,8 @@ export function AlertsScreen() {
         setAdded(true);
         setTimeout(() => setAdded(false), 2500);
         await loadAlerts();
+        // APK mein confirmation notification
+        showLocalNotification('✅ अलर्ट सेट हो गया', `${selectedCrop} ₹${p} ${direction === 'above' ? 'से ऊपर' : 'से नीचे'} जाने पर सूचना मिलेगी`).catch(() => {});
       }
     } catch {}
     setSaving(false);
@@ -181,23 +224,45 @@ export function AlertsScreen() {
             </button>
           </div>
 
-          {/* Price Input */}
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1 flex items-center bg-gray-50 rounded-2xl px-4 border-2 border-gray-100 focus-within:border-[#2d6a3e]">
-              <span className="text-gray-400 font-semibold mr-2">₹</span>
-              <input
-                type="number"
-                placeholder={t('alerts.pricePh')}
-                value={tp}
-                onChange={e => setTp(e.target.value)}
-                className="flex-1 py-3 bg-transparent outline-none text-sm text-gray-800"
-              />
+          {/* Price Input — historical range se validate */}
+          {priceRange && (
+            <div className="flex items-center gap-2 bg-[#e8f5e9] border border-[#2d6a3e]/20 rounded-xl px-3 py-2 mb-3">
+              <span className="text-sm">📊</span>
+              <p className="text-xs font-bold text-[#2d6a3e]">
+                {t('alerts.validRange').replace('{min}', String(priceRange.min)).replace('{max}', String(priceRange.max))}
+              </p>
             </div>
-            <button onClick={createAlert} disabled={!tp || parseFloat(tp) <= 0 || saving}
-              className={`px-4 py-3 rounded-2xl font-semibold text-sm transition-all ${tp && parseFloat(tp) > 0 ? 'bg-[#2d6a3e] text-white active:scale-95' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('alerts.setBtn')}
-            </button>
-          </div>
+          )}
+          {(() => {
+            const p = parseFloat(tp);
+            const outOfRange = priceRange && tp !== '' && p > 0 && (p < priceRange.min || p > priceRange.max);
+            const canSet = tp && p > 0 && !outOfRange;
+            return (
+              <>
+                <div className="flex gap-2 mb-1">
+                  <div className={`flex-1 flex items-center bg-gray-50 rounded-2xl px-4 border-2 transition-colors ${outOfRange ? 'border-red-400' : 'border-gray-100 focus-within:border-[#2d6a3e]'}`}>
+                    <span className="text-gray-400 font-semibold mr-2">₹</span>
+                    <input
+                      type="number"
+                      placeholder={t('alerts.pricePh')}
+                      value={tp}
+                      onChange={e => setTp(e.target.value)}
+                      className="flex-1 py-3 bg-transparent outline-none text-sm text-gray-800"
+                    />
+                  </div>
+                  <button onClick={createAlert} disabled={!canSet || saving}
+                    className={`px-4 py-3 rounded-2xl font-semibold text-sm transition-all ${canSet ? 'bg-[#2d6a3e] text-white active:scale-95' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('alerts.setBtn')}
+                  </button>
+                </div>
+                {outOfRange && priceRange && (
+                  <p className="text-xs text-red-500 mb-2">
+                    ⚠️ {t('alerts.validRange').replace('{min}', String(priceRange.min)).replace('{max}', String(priceRange.max))}
+                  </p>
+                )}
+              </>
+            );
+          })()}
 
           {added && (
             <div className="flex items-center gap-2 bg-green-50 rounded-xl px-4 py-2.5">
@@ -222,24 +287,25 @@ export function AlertsScreen() {
             <button
               onClick={async () => {
                 if (bestDay) {
+                  // Toggle OFF — backend se best_day alerts delete karo
                   setBestDay(false);
                   localStorage.setItem('bestDayAlert', 'off');
                   setNotifDenied(false);
+                  fetch(`${BASE_URL}/api/alerts/best-day/off`, { method: 'DELETE', headers: authHeaders() }).catch(() => {});
                 } else {
-                  if ('Notification' in window) {
-                    const perm = await Notification.requestPermission();
-                    if (perm === 'granted') {
-                      setBestDay(true);
-                      localStorage.setItem('bestDayAlert', 'on');
-                      setNotifDenied(false);
-                      new Notification('MandiQ 🌾', { body: t('alerts.bestDayOn') + ' — Best Day Alert' });
-                    } else {
-                      setNotifDenied(true);
-                    }
-                  } else {
-                    setBestDay(true);
-                    localStorage.setItem('bestDayAlert', 'on');
-                  }
+                  // Permission maango
+                  await ensurePushPermission();
+                  if (notifDenied) return;
+                  // Backend pe crops ke liye best_day alerts banao
+                  try {
+                    await fetch(`${BASE_URL}/api/alerts/best-day/on`, {
+                      method: 'POST',
+                      headers: authHeaders(),
+                      body: JSON.stringify({ crops: userCrops, market: selectedMarket || 'Azadpur APMC' }),
+                    });
+                  } catch {}
+                  setBestDay(true);
+                  localStorage.setItem('bestDayAlert', 'on');
                 }
               }}
               className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${bestDay ? 'bg-[#f97316]' : 'bg-gray-200'}`}
@@ -247,7 +313,17 @@ export function AlertsScreen() {
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${bestDay ? 'translate-x-6' : 'translate-x-0'}`} />
             </button>
           </div>
-          <p className="text-xs text-gray-500">{t('alerts.bestDayDesc')}</p>
+          {/* User ke crops — jinke liye best day alert jayegi */}
+          <p className="text-xs text-gray-500 mt-2">{t('alerts.bestDayForCrops')}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {userCrops.map(c => (
+              <span key={c} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fff7ed] text-[#c2410c] border border-[#f97316]/20">
+                <span>{CROP_ICONS[c] || '🌱'}</span>
+                <span>{cropName(c, t)}</span>
+              </span>
+            ))}
+          </div>
+
           {notifDenied && (
             <p className="text-xs text-red-500 mt-2">⚠️ {t('alerts.notifDenied')}</p>
           )}

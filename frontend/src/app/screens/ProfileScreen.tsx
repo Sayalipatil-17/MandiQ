@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Globe, MapPin, Leaf, LogOut, Info, Star, X, Pencil, Check, Loader2 } from 'lucide-react';
+import { Globe, MapPin, Leaf, LogOut, Info, Star, X, Pencil, Check, Loader2, FileText } from 'lucide-react';
 import { BottomNav } from '../components/BottomNav';
 import { SupportChat } from '../components/SupportChat';
+import { Fireworks } from '../components/Fireworks';
 import { useT, type Lang, cropName } from '../../i18n';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -15,9 +16,11 @@ export function ProfileScreen() {
   const { t, lang, setLang } = useT();
   const [user, setUser] = useState<any>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
+  const [showFireworks, setShowFireworks] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(() => localStorage.getItem('mandiq_rated') === 'true');
   const [rated, setRated] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -117,6 +120,7 @@ export function ProfileScreen() {
 
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
+      <Fireworks show={showFireworks} />
       {/* Header */}
       <div className="mq-header px-6 py-8 rounded-b-[2.5rem]">
         <div className="flex items-center justify-between mb-4">
@@ -201,6 +205,21 @@ export function ProfileScreen() {
           </span>
         </button>
 
+        {/* Terms & Conditions */}
+        <button onClick={() => setShowTerms(true)}
+          className="w-full bg-[#f0f7f1] rounded-2xl p-5 border border-[#2d6a3e]/15 flex items-center justify-between transition-all active:scale-95">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 bg-[#2d6a3e] rounded-xl flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-gray-800">{t('profile.terms')}</p>
+              <p className="text-xs text-gray-400">{t('profile.termsSub')}</p>
+            </div>
+          </div>
+          <span className="text-xs text-[#2d6a3e] font-semibold">{t('home.viewBtn')}</span>
+        </button>
+
         {/* Rate & Feedback section */}
         {!alreadyRated && (
           <div id="rate-section" className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
@@ -241,6 +260,10 @@ export function ProfileScreen() {
                           });
                         } catch { }
                         localStorage.setItem('mandiq_rated', 'true');
+                        if (rating >= 4) {
+                          setShowFireworks(true);
+                          setTimeout(() => setShowFireworks(false), 50);
+                        }
                         setRated(true);
                       }}
                       className="w-full py-3 rounded-xl font-semibold text-sm text-white"
@@ -417,6 +440,56 @@ export function ProfileScreen() {
               </div>
             </div>
             <p className="text-xs text-center text-gray-400 mt-6">{t('profile.madeWith')}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Terms & Conditions Modal ────────────────────────────────── */}
+      {showTerms && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => setShowTerms(false)}>
+          <div className="w-full max-w-md bg-white rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-[#2d6a3e] rounded-xl flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <p className="font-bold text-gray-800 text-lg">{t('profile.terms')}</p>
+              </div>
+              <button onClick={() => setShowTerms(false)} className="p-2 rounded-xl bg-gray-100">
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
+              <div>
+                <p className="font-semibold text-gray-800 mb-1">1. {t('profile.t1title')}</p>
+                <p>{t('profile.t1body')}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 mb-1">2. {t('profile.t2title')}</p>
+                <p>{t('profile.t2body')}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 mb-1">3. {t('profile.t3title')}</p>
+                <p>{t('profile.t3body')}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 mb-1">4. {t('profile.t4title')}</p>
+                <p>{t('profile.t4body')}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 mb-1">5. {t('profile.t5title')}</p>
+                <p>{t('profile.t5body')}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 mb-1">6. {t('profile.t6title')}</p>
+                <p>{t('profile.t6body')}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-center text-gray-400 mt-6">{t('profile.termsFooter')}</p>
           </div>
         </div>
       )}
