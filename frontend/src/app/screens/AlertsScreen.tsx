@@ -62,10 +62,30 @@ export function AlertsScreen() {
     setNotifLoading(false);
   }
 
+  /** Push permission maango — alert banane se PEHLE, taaki instant
+   *  trigger hone par notification miss na ho. */
+  async function ensurePushPermission() {
+    try {
+      const OneSignal = (window as any).OneSignal;
+      if (OneSignal?.Notifications) {
+        if (!OneSignal.Notifications.permission) {
+          await OneSignal.Notifications.requestPermission();
+        }
+        setNotifDenied(!OneSignal.Notifications.permission);
+        return;
+      }
+      if ('Notification' in window) {
+        const res = await Notification.requestPermission();
+        setNotifDenied(res !== 'granted');
+      }
+    } catch {}
+  }
+
   async function createAlert() {
     const p = parseFloat(tp);
     if (!p || p <= 0) return;
     setSaving(true);
+    await ensurePushPermission();
     try {
       const r = await fetch(`${BASE_URL}/api/alerts`, {
         method: 'POST',

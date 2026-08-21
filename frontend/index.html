@@ -29,6 +29,20 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- OneSignal Web Push -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      window.OneSignalDeferred.push(async function (OneSignal) {
+        await OneSignal.init({
+          appId: "6ad18ee9-92e5-4519-a38d-c16d2c8c0eda",
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: { enable: false },
+        });
+      });
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

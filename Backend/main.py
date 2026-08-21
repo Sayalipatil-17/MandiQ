@@ -23,6 +23,7 @@ from predictor import MandiPredictor
 from database import MandiDB
 from auth import create_access_token, send_otp as _send_otp, decode_access_token
 from mandiq_cross_mandi import best_market_today, all_commodities
+from notification_templates import build_message
 from apscheduler.schedulers.background import BackgroundScheduler
 import pandas as pd
 scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
@@ -35,6 +36,51 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # ─── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 log = logging.getLogger("mandiq")
+
+ONESIGNAL_APP_ID = os.getenv("ONESIGNAL_APP_ID", "6ad18ee9-92e5-4519-a38d-c16d2c8c0eda")
+ONESIGNAL_REST_KEY = os.getenv("ONESIGNAL_REST_KEY", "")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://mandi-q.vercel.app")
+
+
+def send_push(title: str, body: str, user_id: Optional[int] = None):
+    """
+    OneSignal push bhejo. user_id diya ho to sirf usi farmer ko,
+    warna sab subscribers ko.
+    """
+    if not ONESIGNAL_APP_ID or not ONESIGNAL_REST_KEY:
+        log.warning("OneSignal keys missing — push skipped")
+        return
+    import requests
+
+    payload = {
+        "app_id": ONESIGNAL_APP_ID,
+        "headings": {"en": title},
+        "contents": {"en": body},
+        "url": FRONTEND_URL + "/alerts",
+    }
+    if user_id is not None:
+        payload["include_aliases"] = {"external_id": [str(user_id)]}
+        payload["target_channel"] = "push"
+    else:
+        payload["included_segments"] = ["All"]
+
+    try:
+        r = requests.post(
+            "https://onesignal.com/api/v1/notifications",
+            headers={
+                "Authorization": f"Basic {ONESIGNAL_REST_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=10,
+        )
+        if r.status_code >= 300:
+            log.warning(f"OneSignal push rejected [{r.status_code}]: {r.text[:300]}")
+        else:
+            log.info(f"Push sent to user={user_id}: {title}")
+    except Exception as e:
+        log.warning(f"OneSignal push failed: {e}")
+
 
 def _check_all_alerts():
     """Har 9AM aur 6PM: check karo kisi ka alert trigger hua ya nahi."""
@@ -60,8 +106,11 @@ def _check_all_alerts():
         triggered = (direction == "above" and current_price >= target) or \
                     (direction == "below" and current_price <= target)
         if triggered:
-            # In-app notifications only: do not send SMS for price alerts
             db.mark_alert_triggered(alert["id"])
+            title, body = build_message(
+                direction, alert["crop"], alert["market"], current_price, target
+            )
+            send_push(title, body, user_id=alert["user_id"])
             log.info(f"Alert triggered & stored in-app: {alert['crop']} @ {alert['market']} = {current_price}")
 
 def _daily_scrape():
@@ -591,7 +640,34 @@ def api_create_alert(req: CreateAlertRequest, authorization: Optional[str] = Hea
     user = _get_user_from_token(authorization)
     mobile = user.get("mobile") or user.get("mobile_number", "")
     alert_id = db.create_alert(user["id"], mobile, req.crop, req.market, req.target_price, req.direction)
-    return {"status": "created", "alert_id": alert_id}
+
+    # Agar condition abhi hi puri ho rahi hai to turant notification bhejo —
+    # 9AM/6PM scheduler ka intezaar mat karao.
+    fired = _fire_alert_if_matched(alert_id, user["id"], req.crop, req.market,
+                                   req.target_price, req.direction)
+    return {"status": "created", "alert_id": alert_id, "triggered_now": fired}
+
+
+def _fire_alert_if_matched(alert_id: int, user_id: int, crop: str, market: str,
+                           target: float, direction: str) -> bool:
+    """Ek alert ka current price check karke, match hone par push bhejo."""
+    try:
+        records = db.get_data(crop, market)
+        if not records:
+            return False
+        current_price = records[-1]["modal_price"]
+        matched = (direction == "above" and current_price >= target) or \
+                  (direction == "below" and current_price <= target)
+        if not matched:
+            return False
+        db.mark_alert_triggered(alert_id)
+        title, body = build_message(direction, crop, market, current_price, target)
+        send_push(title, body, user_id=user_id)
+        log.info(f"Alert fired instantly: {crop} @ {market} = {current_price} (target {target})")
+        return True
+    except Exception as e:
+        log.warning(f"Instant alert check failed: {e}")
+        return False
 
 @app.get("/api/alerts")
 def api_get_alerts(triggered: int = Query(0, ge=0, le=1), authorization: Optional[str] = Header(None)):
