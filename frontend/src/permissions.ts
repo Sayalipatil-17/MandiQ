@@ -31,13 +31,12 @@ export async function unlockSpeakerAudio(): Promise<boolean> {
       source.start(0);
     }
 
-    // SpeechSynthesis speaker pipeline warm-up
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-      // Dummy zero-volume utterance to prime TTS speaker engine
-      const dummyUtterance = new SpeechSynthesisUtterance('');
-      dummyUtterance.volume = 0;
-      window.speechSynthesis.speak(dummyUtterance);
+    // Native Android TTS engine warm-up
+    if (isNative()) {
+      try {
+        const { TextToSpeech } = await import('@capacitor-community/text-to-speech');
+        await TextToSpeech.getSupportedLanguages().catch(() => {});
+      } catch {}
     }
 
     speakerUnlocked = true;

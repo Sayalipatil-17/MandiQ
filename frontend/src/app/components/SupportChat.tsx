@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Mic, MicOff, Send, Volume2, VolumeX, Mail } from 'lucide-react';
 import { useT, type Lang } from '../../i18n';
+import { speakText, stopSpeech as stopSpeaker } from '../../speaker';
 
 interface Suggestion {
   label: string;
@@ -264,21 +265,16 @@ export function SupportChat() {
   const sttLang: Record<Lang, string> = { en: 'en-IN', hi: 'hi-IN', pa: 'hi-IN', mr: 'hi-IN' };
 
   function stopSpeech() {
-    window.speechSynthesis?.cancel();
+    stopSpeaker();
     setSpeaking(false);
   }
 
   function speak(text: string) {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang  = SPEAK_LANG[speakLangRef.current];
-    u.rate  = 0.9;
-    u.pitch = 1;
-    u.onstart = () => setSpeaking(true);
-    u.onend   = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(u);
+    speakText(text, speakLangRef.current, {
+      onStart: () => setSpeaking(true),
+      onEnd: () => setSpeaking(false),
+      onError: () => setSpeaking(false),
+    });
   }
 
   function toggleVoice() {
