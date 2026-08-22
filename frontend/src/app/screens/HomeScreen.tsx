@@ -586,7 +586,6 @@ export function HomeScreen() {
                   const minPrice = Math.min(...valid.map(m => m.price));
                   const priceDiff = maxPrice - minPrice;
                   const best = compareData.find(m => m.isBest);
-                  const ranked = [...compareData].sort((a, b) => b.price - a.price);
 
                   return (
                     <>
@@ -651,66 +650,6 @@ export function HomeScreen() {
                           })}
                         </div>
                       </div>
-
-                      {/* ── Rank bars ── */}
-                      <div className="space-y-3 mb-4">
-                        {ranked.map((m, idx) => {
-                          const pct = maxPrice > 0 ? Math.round((m.price / maxPrice) * 100) : 0;
-                          const rankColor = idx === 0
-                            ? { bg: '#E6F2EB', bar: 'linear-gradient(90deg,#1C4230,#3D8055)', text: '#1C4230', badge: '#1C4230' }
-                            : idx === 1
-                            ? { bg: '#F0F4FF', bar: 'linear-gradient(90deg,#4A6FA5,#6B8FC4)', text: '#2D4A7A', badge: '#4A6FA5' }
-                            : { bg: '#FFF4F0', bar: 'linear-gradient(90deg,#C06A3C,#E8692A)', text: '#8B3A1A', badge: '#C06A3C' };
-                          return (
-                            <div key={m.value} className="rounded-2xl p-3.5" style={{ background: rankColor.bg }}>
-                              {/* Rank badge + name + price */}
-                              <div className="flex items-center gap-2.5 mb-2.5">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white flex-shrink-0"
-                                  style={{ background: rankColor.badge }}>
-                                  {idx + 1}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-sm">{m.emoji}</span>
-                                    <p className="text-sm font-bold truncate" style={{ color: rankColor.text }}>
-                                      {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}
-                                    </p>
-                                    {idx === 0 && (
-                                      <span className="text-[8px] font-black text-white px-1.5 py-0.5 rounded-full" style={{ background: rankColor.badge }}>
-                                        {t('common.best')}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {m.change !== 0 && m.price > 0 && (
-                                    <p className={`text-[10px] font-semibold mt-0.5 ${m.change > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                      {m.change > 0 ? '▲' : '▼'} ₹{Math.abs(m.change)} {t('home.fromYesterday')}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                  <p className="text-lg font-black" style={{ color: rankColor.text }}>
-                                    {m.price > 0 ? `₹${m.price.toLocaleString()}` : '—'}
-                                  </p>
-                                  {idx > 0 && m.price > 0 && priceDiff > 0 && (
-                                    <p className="text-[9px] text-red-400 font-semibold">{t('common.less').replace('{diff}', (maxPrice - m.price).toLocaleString())}</p>
-                                  )}
-                                </div>
-                              </div>
-                              {/* Progress bar with % label */}
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-3 bg-white/70 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all duration-700"
-                                    style={{ width: `${pct}%`, background: rankColor.bar }}
-                                  />
-                                </div>
-                                <span className="text-[10px] font-bold w-8 text-right" style={{ color: rankColor.text }}>{pct}%</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
 
                       {/* ── Best sell action card ── */}
                       {best && (
