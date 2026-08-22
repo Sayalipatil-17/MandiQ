@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { Sprout, ChevronRight } from 'lucide-react';
 import { useT, type Lang } from '../../i18n';
 import { useAuth } from '../../AuthContext';
-import { requestAllAppPermissions } from '../../permissions';
+import { requestAllAppPermissions, unlockSpeakerAudio } from '../../permissions';
 import bgImage from '../../assets/mandiq-bg.png';
 
 const BG_IMAGE = bgImage;
@@ -14,13 +14,20 @@ export function SplashScreen() {
   const { lang, setLang, t } = useT();
 
   useEffect(() => {
-    // App start/install hote hi mic, notifications, aur location permissions request karo
+    // App start/install hote hi speaker, mic, notifications, aur location permissions request karo
     requestAllAppPermissions().catch(() => {});
 
     if (isAuthenticated || token || localStorage.getItem('mandiq_token')) {
       navigate('/home', { replace: true });
     }
   }, [isAuthenticated, token, navigate]);
+
+  const handleGetStarted = async () => {
+    // User interaction par speaker audio context unlock aur permissions confirm karo
+    await unlockSpeakerAudio().catch(() => {});
+    requestAllAppPermissions().catch(() => {});
+    navigate('/login');
+  };
 
   const languages: { code: Lang; label: string }[] = [
     { code: 'en', label: 'English' },
@@ -83,7 +90,7 @@ export function SplashScreen() {
           </div>
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={handleGetStarted}
             className="mq-cta w-full h-14 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2"
           >
             {t('common.getStarted')}

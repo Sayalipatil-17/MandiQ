@@ -1,15 +1,106 @@
 import { isNative } from './onesignal';
 
+// Global AudioContext singleton to keep speaker pipeline active
+let sharedAudioContext: AudioContext | null = null;
+let speakerUnlocked = false;
+
+/**
+ * Speaker aur Audio subsystem ko unlock aur warm-up karne ke liye function.
+ * Browser autoplay policy aur Android WebView audio restrictions ko remove karta hai.
+ */
+export async function unlockSpeakerAudio(): Promise<boolean> {
+  if (speakerUnlocked && sharedAudioContext && sharedAudioContext.state === 'running') {
+    return true;
+  }
+
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtx) {
+      if (!sharedAudioContext) {
+        sharedAudioContext = new AudioCtx();
+      }
+      if (sharedAudioContext.state === 'suspended') {
+        await sharedAudioContext.resume();
+      }
+
+      // Short silent buffer play karke speaker channel open karte hain
+      const buffer = sharedAudioContext.createBuffer(1, 1, 22050);
+      const source = sharedAudioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(sharedAudioContext.destination);
+      source.start(0);
+    }
+
+    // SpeechSynthesis speaker pipeline warm-up
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      // Dummy zero-volume utterance to prime TTS speaker engine
+      const dummyUtterance = new SpeechSynthesisUtterance('');
+      dummyUtterance.volume = 0;
+      window.speechSynthesis.speak(dummyUtterance);
+    }
+
+    speakerUnlocked = true;
+    console.log('[Permissions] Speaker audio pipeline unlocked & initialized successfully');
+    return true;
+  } catch (e) {
+    console.warn('[Permissions] Speaker audio unlock error:', e);
+    return false;
+  }
+}
+
+// User ke pehle click / touch par speaker unlock guarantee karne ke liye event listeners
+if (typeof window !== 'undefined') {
+  const handleFirstInteraction = () => {
+    unlockSpeakerAudio().catch(() => {});
+    window.removeEventListener('click', handleFirstInteraction, true);
+    window.removeEventListener('touchstart', handleFirstInteraction, true);
+    window.removeEventListener('keydown', handleFirstInteraction, true);
+  };
+  window.addEventListener('click', handleFirstInteraction, true);
+  window.addEventListener('touchstart', handleFirstInteraction, true);
+  window.addEventListener('keydown', handleFirstInteraction, true);
+}
+
 /**
  * App ke installation/start par hi saari permissions upfront maangne ke liye:
- * 1. Push & Local Notifications (channel setup ke sath)
- * 2. Microphone (Voice Chat aur Speech search ke liye)
- * 3. Location (GPS location ke liye)
+ * 1. Speaker & Audio Output (Voice playback, TTS, Mandi alerts audio ke liye)
+ * 2. Push & Local Notifications (channel setup ke sath)
+ * 3. Microphone (Voice Chat aur Speech search ke liye)
+ * 4. Location (GPS location ke liye)
  */
 export async function requestAllAppPermissions() {
-  console.log('[Permissions] Requesting all essential app permissions upfront...');
+  console.log('[Permissions] Requesting all essential app permissions upfront (Speaker, Mic, Notifications, Location)...');
 
-  // 1. Notification Permission & High-Priority Channel Setup
+  // 1. Speaker / Audio Output Permission & Pipeline Unlock
+  try {
+    // Check W3C speaker-selection permission if supported
+    if (navigator.permissions && typeof (navigator.permissions as any).query === 'function') {
+      try {
+        const speakerStatus = await (navigator.permissions as any).query({ name: 'speaker-selection' });
+        console.log('[Permissions] Speaker selection permission status:', speakerStatus.state);
+      } catch {
+        // speaker-selection query is not supported in all browsers, which is normal
+      }
+    }
+
+    // Modern Audio Output device permission (if supported)
+    if (navigator.mediaDevices && typeof (navigator.mediaDevices as any).selectAudioOutput === 'function') {
+      try {
+        await (navigator.mediaDevices as any).selectAudioOutput();
+        console.log('[Permissions] Audio output device selected/granted');
+      } catch (err) {
+        console.warn('[Permissions] Audio output device select prompt dismissed or not needed:', err);
+      }
+    }
+
+    // Unlock AudioContext and speech synthesizer speaker
+    await unlockSpeakerAudio();
+  } catch (e) {
+    console.warn('[Permissions] Speaker permission error:', e);
+  }
+
+  // 2. Notification Permission & High-Priority Channel Setup
   try {
     if (isNative()) {
       const { LocalNotifications } = await import('@capacitor/local-notifications');
@@ -51,7 +142,7 @@ export async function requestAllAppPermissions() {
     console.warn('[Permissions] Notification error:', e);
   }
 
-  // 2. Microphone Permission (Voice assistant / Voice search)
+  // 3. Microphone Permission (Voice assistant / Voice search)
   try {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -62,7 +153,7 @@ export async function requestAllAppPermissions() {
     console.warn('[Permissions] Microphone error/denied:', e);
   }
 
-  // 3. Location Permission (GPS Mandi distance)
+  // 4. Location Permission (GPS Mandi distance)
   try {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
