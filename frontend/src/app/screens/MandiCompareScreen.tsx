@@ -121,6 +121,84 @@ export function MandiCompareScreen() {
           </div>
         )}
 
+        {/* ── Visual Bar Chart Comparison Card (Matching screenshot) ── */}
+        {!ld && mandis.length > 0 && (() => {
+          const valid = mandis.filter(m => m.price > 0);
+          const maxPrice = valid.length > 0 ? Math.max(...valid.map(m => m.price)) : 0;
+          const minPrice = valid.length > 0 ? Math.min(...valid.map(m => m.price)) : 0;
+          const priceDiff = maxPrice - minPrice;
+
+          return (
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              {/* Header with price difference badge */}
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('home.mandiCompare')}</p>
+                  <p className="text-sm font-bold text-gray-800">{cropName(crop, t)} — Mandi Bhav</p>
+                </div>
+                {priceDiff > 0 && (
+                  <div className="bg-amber-50 border border-amber-200/80 rounded-xl px-2.5 py-1 text-right">
+                    <p className="text-[10px] text-amber-700 font-bold">
+                      ₹{priceDiff.toLocaleString()} {t('cmp.fark') || 'फ़र्क'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Vertical Bar Chart Container */}
+              <div className="pt-4 pb-2 px-4 flex items-end justify-center gap-12 min-h-[220px]">
+                {mandis.map((m) => {
+                  const isBest = m.isBest || (maxPrice > 0 && m.price === maxPrice);
+                  // Scale height: maxPrice gets 160px, lower price scales proportionally (min 50px)
+                  const barHeightPx = maxPrice > 0 ? Math.max(50, Math.round((m.price / maxPrice) * 160)) : 80;
+
+                  return (
+                    <div key={m.value} className="flex flex-col items-center flex-1 max-w-[120px]">
+                      {/* Price above bar */}
+                      <div className="mb-2 text-center">
+                        <p className={`text-base font-extrabold tracking-tight ${isBest ? 'text-[#2e5d16]' : 'text-gray-800'}`}>
+                          {m.price > 0 ? `₹${m.price.toLocaleString()}` : '—'}
+                        </p>
+                      </div>
+
+                      {/* Bar Pillar */}
+                      <div className="w-full flex justify-center items-end" style={{ height: '160px' }}>
+                        <div
+                          className={`w-20 rounded-t-2xl transition-all duration-700 ${
+                            isBest
+                              ? 'bg-[#3b6d16] shadow-sm'
+                              : 'bg-[#FBD88B] shadow-sm'
+                          }`}
+                          style={{
+                            height: `${barHeightPx}px`,
+                            background: isBest
+                              ? 'linear-gradient(180deg, #44791c 0%, #315e10 100%)'
+                              : 'linear-gradient(180deg, #fde29b 0%, #f6ce72 100%)',
+                          }}
+                        />
+                      </div>
+
+                      {/* Mandi Name Below Bar */}
+                      <div className="mt-3 flex items-center justify-center gap-1.5 text-center">
+                        {isBest && (
+                          <Star className="w-4 h-4 text-amber-500 fill-amber-500 flex-shrink-0" />
+                        )}
+                        <p className={`text-sm font-bold ${isBest ? 'text-gray-900' : 'text-gray-700'}`}>
+                          {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-[11px] text-gray-400 text-center mt-3 pt-2 border-t border-gray-50 font-medium">
+                {t('common.perQuintal')} · Live Mandi Comparison
+              </p>
+            </div>
+          );
+        })()}
+
         {!ld && mandis.map(m => {
           const up = m.change > 0, down = m.change < 0;
           return (

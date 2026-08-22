@@ -604,6 +604,54 @@ export function HomeScreen() {
                         )}
                       </div>
 
+                      {/* ── Visual Vertical Pillar Bar Chart (Matching Screenshot) ── */}
+                      <div className="bg-[#f8faf8] rounded-2xl p-4 mb-4 border border-gray-100/80">
+                        <div className="pt-2 pb-1 px-2 flex items-end justify-center gap-10 min-h-[180px]">
+                          {compareData.map((m) => {
+                            const isBest = m.isBest || (maxPrice > 0 && m.price === maxPrice);
+                            const barHeightPx = maxPrice > 0 ? Math.max(40, Math.round((m.price / maxPrice) * 130)) : 70;
+
+                            return (
+                              <div key={m.value} className="flex flex-col items-center flex-1 max-w-[110px]">
+                                {/* Price above bar */}
+                                <div className="mb-1.5 text-center">
+                                  <p className={`text-sm font-extrabold tracking-tight ${isBest ? 'text-[#2e5d16]' : 'text-gray-800'}`}>
+                                    {m.price > 0 ? `₹${m.price.toLocaleString()}` : '—'}
+                                  </p>
+                                </div>
+
+                                {/* Bar Pillar */}
+                                <div className="w-full flex justify-center items-end" style={{ height: '130px' }}>
+                                  <div
+                                    className={`w-16 rounded-t-xl transition-all duration-700 ${
+                                      isBest
+                                        ? 'bg-[#3b6d16] shadow-sm'
+                                        : 'bg-[#FBD88B] shadow-sm'
+                                    }`}
+                                    style={{
+                                      height: `${barHeightPx}px`,
+                                      background: isBest
+                                        ? 'linear-gradient(180deg, #44791c 0%, #315e10 100%)'
+                                        : 'linear-gradient(180deg, #fde29b 0%, #f6ce72 100%)',
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Mandi Name Below Bar */}
+                                <div className="mt-2.5 flex items-center justify-center gap-1 text-center">
+                                  {isBest && (
+                                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
+                                  )}
+                                  <p className={`text-xs font-bold ${isBest ? 'text-gray-900' : 'text-gray-700'}`}>
+                                    {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       {/* ── Rank bars ── */}
                       <div className="space-y-3 mb-4">
                         {ranked.map((m, idx) => {
