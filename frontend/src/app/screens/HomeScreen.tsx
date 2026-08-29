@@ -10,6 +10,7 @@ import { useT, cropName } from '../../i18n';
 
 import { checkAndNotifyTriggeredAlerts } from '../../onesignal';
 import { requestAllAppPermissions } from '../../permissions';
+import { analytics, logEvent } from '../../firebase';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -153,7 +154,7 @@ function ChartSection({ forecastOnly, t }: { forecastOnly: { label: string; pric
   const [show, setShow] = useState(false);
   return (
     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-      <button onClick={() => setShow(!show)}
+      <button onClick={() => { setShow(!show); if (!show) logEvent(analytics, 'graph_opened', {}); }}
         className="w-full flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2">
           <span className="text-lg">📈</span>
@@ -238,6 +239,7 @@ export function HomeScreen() {
   const canSearch = selectedMarket !== '' && selectedCrop !== '';
 
   async function loadCompare() {
+    logEvent(analytics, 'mandi_compare_opened', { crop: selectedCrop });
     if (compareData.length) {
       setShowCompare(v => !v);
       return;
@@ -313,6 +315,7 @@ export function HomeScreen() {
 
   async function handleSearch() {
     if (!canSearch) return;
+    logEvent(analytics, 'price_search', { crop: selectedCrop, market: selectedMarket });
     setLoading(true); setError(null); setShowResult(false); setSelectedDayIdx(-1);
     try {
       const [hist, preds] = await Promise.all([
@@ -422,7 +425,7 @@ export function HomeScreen() {
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
               {MARKETS.map(mandi => (
                 <button key={mandi.value}
-                  onClick={() => { setSelectedMarket(mandi.value); localStorage.setItem('selectedMarket', mandi.value); setShowMandiDropdown(false); setShowResult(false); setCompareData([]); }}
+                  onClick={() => { setSelectedMarket(mandi.value); localStorage.setItem('selectedMarket', mandi.value); logEvent(analytics, 'mandi_selected', { mandi: mandi.value }); setShowMandiDropdown(false); setShowResult(false); setCompareData([]); }}
                   className={`w-full px-4 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors ${selectedMarket === mandi.value ? 'bg-[#E6F2EB]' : ''}`}>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${selectedMarket === mandi.value ? 'bg-[#1C4230]/10' : 'bg-gray-100'}`}>{mandi.emoji}</div>
                   <div className="flex-1 text-left">
@@ -448,7 +451,7 @@ export function HomeScreen() {
               const isSelected = selectedCrop === crop.name;
               return (
                 <button key={crop.name}
-                  onClick={() => { setSelectedCrop(crop.name); localStorage.setItem('selectedCrop', crop.name); setShowResult(false); setCompareData([]); }}
+                  onClick={() => { setSelectedCrop(crop.name); localStorage.setItem('selectedCrop', crop.name); logEvent(analytics, 'crop_selected', { crop: crop.name }); setShowResult(false); setCompareData([]); }}
                   className={`flex flex-col items-center py-3 px-1 rounded-2xl border-2 transition-all ${isSelected ? 'bg-white border-white' : 'bg-white/15 border-white/20'}`}>
                   <span className="text-2xl mb-1">{crop.emoji}</span>
                   <p className={`text-xs font-medium leading-tight text-center ${isSelected ? 'text-[#1C4230]' : 'text-white'}`}>{cropName(crop.name, t)}</p>
@@ -546,7 +549,7 @@ export function HomeScreen() {
               {dayStrip.map((day, idx) => {
                 const isActive = activeIdx === idx;
                 return (
-                  <button key={day.dateKey} onClick={() => setSelectedDayIdx(idx)}
+                  <button key={day.dateKey} onClick={() => { setSelectedDayIdx(idx); logEvent(analytics, 'day_selected', { date: day.dateKey, price: day.price }); }}
                     className={`flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all min-w-[58px] ${isActive ? 'bg-[#1C4230] border-[#1C4230]' : idx === todayIdx ? 'bg-gray-50 border-[#1C4230]/30' : 'bg-gray-50 border-transparent'}`}>
                     <p className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-600'}`}>{day.label}</p>
                     <p className={`text-xs mt-0.5 ${isActive ? 'text-white/80' : 'text-gray-400'}`}>₹{day.price.toLocaleString()}</p>
@@ -669,7 +672,7 @@ export function HomeScreen() {
                             <p className="text-xl font-black text-white">₹{best.price.toLocaleString()}</p>
                             <p className="text-[10px] text-white/60">{t('common.perQuintal')}</p>
                           </div>
-                          <button onClick={() => window.open(`https://maps.google.com/?q=${best.value}+Delhi`, '_blank')}
+                          <button onClick={() => { logEvent(analytics, 'navigate_to_mandi', { mandi: best.value }); window.open(`https://maps.google.com/?q=${best.value}+Delhi`, '_blank'); }}
                             className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 active:scale-95">
                             <Navigation className="w-4 h-4 text-white" />
                           </button>
