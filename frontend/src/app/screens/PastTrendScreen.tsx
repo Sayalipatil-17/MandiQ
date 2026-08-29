@@ -4,16 +4,17 @@ import { ArrowLeft, TrendingUp, TrendingDown, Minus, BarChart2, AlertCircle, Loa
 import { BottomNav } from '../components/BottomNav';
 import { mandiApi } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
+import { CropIcon } from '../components/CropIcons';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceLine
 } from 'recharts';
 
 const CROPS = [
-  { name: 'Tomato', emoji: '🍅' },
-  { name: 'Potato', emoji: '🥔' },
-  { name: 'Onion', emoji: '🧅' },
-  { name: 'Spinach', emoji: '🌿' },
+  { name: 'Tomato' },
+  { name: 'Potato' },
+  { name: 'Onion' },
+  { name: 'Spinach' },
 ];
 
 const MARKETS = [
@@ -102,7 +103,7 @@ export function PastTrendScreen() {
           {CROPS.map(c => (
             <button key={c.name} onClick={() => { setCrop(c.name); localStorage.setItem('selectedCrop', c.name); }}
               className={`flex flex-col items-center py-2 rounded-xl border-2 transition-all ${crop === c.name ? 'bg-white border-white' : 'bg-white/15 border-white/20'}`}>
-              <span className="text-lg">{c.emoji}</span>
+              <CropIcon crop={c.name} className="w-7 h-7" />
               <p className={`text-[10px] font-medium mt-0.5 ${crop === c.name ? 'text-[#2d6a3e]' : 'text-white'}`}>{cropName(c.name, t)}</p>
             </button>
           ))}
@@ -165,7 +166,7 @@ export function PastTrendScreen() {
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className="w-5 h-5 text-[#2d6a3e]" />
                 <p className="font-semibold text-gray-800">{t('trend.priceHistory')}</p>
-                <span className="ml-auto text-xs text-gray-400">{cropObj?.emoji} {t(marketObj?.shortKey || '')}</span>
+                <span className="ml-auto text-xs text-gray-400 inline-flex items-center gap-1">{cropObj && <CropIcon crop={cropObj.name} className="w-4 h-4" />} {t(marketObj?.shortKey || '')}</span>
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={chartData}>

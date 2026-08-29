@@ -16,7 +16,7 @@ export function BottomNav() {
 
   return (
     <div className="mq-bottom-nav fixed bottom-0 left-0 right-0 max-w-md mx-auto z-50">
-      <div className="flex items-center justify-around px-2 py-2 pb-safe">
+      <div className="flex items-center justify-around px-2 py-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = location.pathname === tab.path;

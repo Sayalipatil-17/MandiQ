@@ -1,26 +1,19 @@
 """
 predictor.py — Multi-step recursive forecasting for mandi prices.
-Updated to work with best_model_trainer.py
+Sirf Mean Reversion model use karta hai (mandiq_reversion.py) — details
+model_trainer.py ke module docstring me hain.
 """
 
 import os
-import json
 import logging
-import numpy as np
 import pandas as pd
-import joblib
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-# ── Compatibility imports from best_model_trainer ──
-from model_trainer import BestModelTrainer, build_features, MODELS_DIR
+from model_trainer import MODELS_DIR
 from mandiq_reversion import MandiQReversion
 
 log = logging.getLogger("mandiq.predictor")
-
-
-def _model_key(commodity: str, market: str) -> str:
-    return f"{commodity.lower()}__{market.lower().replace(' ', '_')}"
 
 
 def _records_to_df(records: List[Dict]) -> pd.DataFrame:
@@ -43,7 +36,6 @@ def _records_to_df(records: List[Dict]) -> pd.DataFrame:
 class MandiPredictor:
 
     def __init__(self):
-        self._cache: Dict[str, Any] = {}
         self.reversion_model = MandiQReversion()
         self._load_reversion()
 
@@ -59,188 +51,68 @@ class MandiPredictor:
             log.warning(f"Reversion model parameters not found at {path}")
 
     def load_model(self, commodity: str, market: str):
-        key = _model_key(commodity, market)
-        path = os.path.join(MODELS_DIR, f"{key}.pkl")
-        if not os.path.exists(path):
-            log.warning(f"Model not found: {path}")
-        else:
-            self._cache[key] = joblib.load(path)
-            log.info(f"Loaded model: {key}")
+        """Backward-compat no-op — reversion params reload hi kaafi hai."""
         self._load_reversion()
 
     def is_trained(self, commodity: str, market: str) -> bool:
         self._load_reversion()
         rev_key = f"{commodity.lower()}__{market.lower()}"
-        if rev_key in self.reversion_model.params:
-            return True
-        key = _model_key(commodity, market)
-        if key in self._cache:
-            return True
-        path = os.path.join(MODELS_DIR, f"{key}.pkl")
-        if os.path.exists(path):
-            self.load_model(commodity, market)
-            return True
-        return False
+        return rev_key in self.reversion_model.params
 
     def list_trained_models(self) -> List[str]:
-        return [f.replace(".pkl", "") for f in os.listdir(MODELS_DIR) if f.endswith(".pkl")]
+        return list(self.reversion_model.params.keys())
 
     def get_model_info(self, commodity: str, market: str) -> Optional[Dict]:
-        key = _model_key(commodity, market)
         if not self.is_trained(commodity, market):
             return None
-        bundle = self._cache[key]
+        rev_key = f"{commodity.lower()}__{market.lower()}"
+        params = self.reversion_model.params.get(rev_key, {})
         return {
-            "commodity": bundle.get("commodity"),
-            "market": bundle.get("market"),
-            "metrics": bundle.get("metrics", {}),
-            "feature_count": len(bundle.get("feature_cols", [])),
-            "models": ["xgb", "lgb", "rf", "et"],
-            "importance": bundle.get("importance", {}),
+            "commodity": commodity,
+            "market": market,
+            "model": "reversion",
+            "resid_std": params.get("resid_std"),
+            "tiers": list(params.get("tiers", {}).keys()),
         }
 
     def predict(self, commodity: str, market: str, historical_data: List[Dict],
                 days_ahead: int = 7, model: str = "reversion") -> Any:
-        if model == "reversion":
-            hist_df = _records_to_df(historical_data)
-            recent_prices = hist_df["modal_price"].tail(15).tolist()
-            if not recent_prices:
-                return {"error": "No historical price records found"}
-
-            from datetime import date
-            today = pd.Timestamp(date.today())
-            last_date = max(hist_df["date"].max(), today - pd.Timedelta(days=1))
-
-            predictions = []
-            current_prices = list(recent_prices)
-
-            for step in range(1, days_ahead + 1):
-                next_date = last_date + timedelta(days=step)
-                res = self.reversion_model.predict(commodity, market, current_prices)
-                if "error" in res:
-                    if step == 1:
-                        return res
-                    break
-
-                pred_price = res["predicted_price"]
-                current_prices.append(pred_price)
-                if len(current_prices) > 15:
-                    current_prices.pop(0)
-
-                predictions.append({
-                    "date": next_date.strftime("%Y-%m-%d"),
-                    "predicted_price": res["predicted_price"],
-                    "lower_bound": res["price_low"],
-                    "upper_bound": res["price_high"],
-                    "direction": res["direction"],
-                    "signal": res["signal"],
-                    "confidence": res["expected_accuracy_pct"] or 58,
-                    "message": res["message"],
-                    "unit": "Rs./Quintal"
-                })
-
-            return predictions
-
-        # ── Ensemble Predictor (Demoted Fallback) ──
-        # WARNING: Multi-day recursive forecasting on near-random-walk daily prices is
-        # highly unreliable. The confidence heuristic (100 - spread/price * 300) has
-        # not been validated. For reliable next-day pricing and ranges, prefer the
-        # mean-reversion model (model='reversion').
-        key = _model_key(commodity, market)
-        if key not in self._cache:
-            path = os.path.join(MODELS_DIR, f"{key}.pkl")
-            if os.path.exists(path):
-                self.load_model(commodity, market)
-            else:
-                raise ValueError(f"No ensemble model for {commodity} @ {market}")
-
-        bundle = self._cache[key]
-        feat_cols = bundle["feature_cols"]
-        w = bundle.get("weights", {"xgb":0.25,"lgb":0.30,"rf":0.25,"et":0.20})
-
         hist_df = _records_to_df(historical_data)
+        recent_prices = hist_df["modal_price"].tail(15).tolist()
+        if not recent_prices:
+            return {"error": "No historical price records found"}
+
         from datetime import date
         today = pd.Timestamp(date.today())
         last_date = max(hist_df["date"].max(), today - pd.Timedelta(days=1))
-        working_df = hist_df.copy()
-        predictions = []
 
-        # Get Azadpur prices for cross-mandi feature
-        az_df = None
-        if "Azadpur" not in market:
-            az_records = [r for r in historical_data if "azadpur" in str(r.get("market","")).lower()]
-            if az_records:
-                az_df = _records_to_df(az_records)
-                az_df["az_lag1"] = az_df["modal_price"].shift(1)
-                az_df = az_df[["date","az_lag1"]]
+        predictions = []
+        current_prices = list(recent_prices)
 
         for step in range(1, days_ahead + 1):
             next_date = last_date + timedelta(days=step)
-
-            # Add placeholder row
-            new_row = pd.DataFrame([{
-                "date": next_date,
-                "modal_price": np.nan,
-                "arrival_qty": working_df["arrival_qty"].tail(7).mean() if "arrival_qty" in working_df.columns else 500.0,
-            }])
-            extended = pd.concat([working_df, new_row], ignore_index=True)
-
-            # Build features
-            try:
-                X_all, _, _ = build_features(extended.copy(), az_df)
-            except Exception as e:
-                log.warning(f"Feature build failed step {step}: {e}")
+            res = self.reversion_model.predict(commodity, market, current_prices)
+            if "error" in res:
+                if step == 1:
+                    return res
                 break
 
-            if X_all.empty:
-                break
-
-            # Get last row (our prediction target)
-            row = X_all.iloc[[-1]]
-            for c in feat_cols:
-                if c not in row.columns:
-                    row = row.copy(); row[c] = 0.0
-            X_pred = row[feat_cols].fillna(0)
-
-            # Predict with all 4 models
-            preds_per_model = []
-            for mname, mkey in [("xgb","xgb"),("lgb","lgb"),("rf","rf"),("et","et")]:
-                if mkey in bundle:
-                    try:
-                        p = bundle[mkey].predict(X_pred)[0]
-                        preds_per_model.append((mname, max(0, float(p))))
-                    except Exception as e:
-                        log.warning(f"Model {mname} failed: {e}")
-
-            if not preds_per_model:
-                break
-
-            # Weighted average
-            weight_map = w
-            predicted = sum(weight_map.get(n, 0.25) * p for n, p in preds_per_model)
-            spread = float(np.std([p for _, p in preds_per_model]))
-
-            ci_width = max(spread * 1.5, predicted * 0.05)
-            lower = max(0, predicted - ci_width)
-            upper = predicted + ci_width
-            rel_spread = spread / (predicted + 1e-6)
-            confidence = round(max(50, 100 - rel_spread * 300), 1)
+            pred_price = res["predicted_price"]
+            current_prices.append(pred_price)
+            if len(current_prices) > 15:
+                current_prices.pop(0)
 
             predictions.append({
                 "date": next_date.strftime("%Y-%m-%d"),
-                "predicted_price": round(predicted, 2),
-                "lower_bound": round(lower, 2),
-                "upper_bound": round(upper, 2),
-                "confidence": confidence,
-                "unit": "Rs./Quintal",
+                "predicted_price": res["predicted_price"],
+                "lower_bound": res["price_low"],
+                "upper_bound": res["price_high"],
+                "direction": res["direction"],
+                "signal": res["signal"],
+                "confidence": res["expected_accuracy_pct"] or 58,
+                "message": res["message"],
+                "unit": "Rs./Quintal"
             })
-
-            # Add prediction back to working history
-            working_df = pd.concat([working_df, pd.DataFrame([{
-                "date": next_date,
-                "modal_price": predicted,
-                "arrival_qty": new_row["arrival_qty"].values[0],
-            }])], ignore_index=True)
 
         return predictions
 

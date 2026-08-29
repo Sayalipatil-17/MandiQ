@@ -102,7 +102,9 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail ?? `HTTP ${res.status}`);
+    const e = new Error(err.detail ?? `HTTP ${res.status}`) as Error & { status?: number };
+    e.status = res.status;
+    throw e;
   }
 
   return res.json() as Promise<T>;
@@ -155,10 +157,10 @@ export const mandiApi = {
   },
 
   /** Start model training (async — poll trainStatus) */
-  trainModel: (commodity: string, market = "Azadpur APMC", modelType: "ensemble" | "xgboost" | "lightgbm" = "ensemble") =>
+  trainModel: (commodity: string, market = "Azadpur APMC") =>
     request<{ status: string; message: string; model_key: string; records_used: number }>("/api/train", {
       method: "POST",
-      body: JSON.stringify({ commodity, market, model_type: modelType }),
+      body: JSON.stringify({ commodity, market, model_type: "reversion" }),
     }),
 
   /** Poll training status */
@@ -194,16 +196,15 @@ export const mandiApi = {
     });
   },
 
-  /** Get model metadata and performance */
+  /** Get model metadata (reversion model) */
   modelInfo: (commodity: string, market = "Azadpur APMC") => {
     const params = new URLSearchParams({ commodity, market });
     return request<{
       commodity: string;
       market: string;
-      metrics: TrainStatus["metrics"];
-      feature_count: number;
-      models: string[];
-      feature_importance: Record<string, Record<string, number>>;
+      model: string;
+      resid_std: number | null;
+      tiers: string[];
     }>(`/api/model/info?${params}`);
   },
 

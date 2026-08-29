@@ -6,11 +6,7 @@ import { SupportChat } from '../components/SupportChat';
 import { Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Area, AreaChart, ReferenceLine, CartesianGrid } from 'recharts';
 import { mandiApi, type Prediction, type PriceRecord } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
-
-const CROP_ICONS: Record<string, string> = {
-  Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿',
-  Cauliflower: '🥦', Mango: '🥭', Apple: '🍎', Wheat: '🌾', Rice: '🌾',
-};
+import { CropIcon } from '../components/CropIcons';
 
 const ML: Record<string, string> = {
   'Azadpur APMC': 'mandi.azadpur',
@@ -86,8 +82,8 @@ export function PredictionScreen() {
         {/* Crop + Market Info */}
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#f0fdf4] rounded-2xl flex items-center justify-center text-2xl">
-              {CROP_ICONS[crop] || '🌱'}
+            <div className="w-12 h-12 bg-[#f0fdf4] rounded-2xl flex items-center justify-center">
+              <CropIcon crop={crop} className="w-8 h-8" />
             </div>
             <div>
               <p className="font-semibold text-gray-800">{cropName(crop, t)}</p>

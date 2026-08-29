@@ -6,9 +6,9 @@ import { SupportChat } from '../components/SupportChat';
 import { Fireworks } from '../components/Fireworks';
 import { useT, type Lang, cropName } from '../../i18n';
 import { useAuth } from '../../AuthContext';
+import { CropIcon } from '../components/CropIcons';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
 const ALL_CROPS = ['Tomato', 'Potato', 'Onion', 'Spinach'];
 const STARS = [1, 2, 3, 4, 5];
 
@@ -19,6 +19,7 @@ export function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -139,7 +140,7 @@ export function ProfileScreen() {
             <button onClick={openEdit} className="p-2 bg-white/20 rounded-xl" title={t('profile.edit')}>
               <Pencil className="w-5 h-5 text-white" />
             </button>
-            <button onClick={handleLogout} className="p-2 bg-white/20 rounded-xl">
+            <button onClick={() => setShowLogoutConfirm(true)} className="p-2 bg-white/20 rounded-xl">
               <LogOut className="w-5 h-5 text-white" />
             </button>
           </div>
@@ -166,7 +167,7 @@ export function ProfileScreen() {
             <div className="flex gap-2 flex-wrap">
               {crops.map((c: string) => (
                 <span key={c} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e8f5e9] rounded-xl text-sm text-[#2d6a3e] font-medium">
-                  {CROP_ICONS[c] || '🌱'} {cropName(c, t)}
+                  <CropIcon crop={c} className="w-5 h-5" /> {cropName(c, t)}
                 </span>
               ))}
             </div>
@@ -369,7 +370,7 @@ export function ProfileScreen() {
                     return (
                       <button key={c} onClick={() => toggleCrop(c)}
                         className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 text-sm font-medium transition-all ${selected ? 'bg-[#e8f5e9] border-[#2d6a3e] text-[#2d6a3e]' : 'border-gray-200 text-gray-600'}`}>
-                        <span className="text-lg">{CROP_ICONS[c]}</span>
+                        <CropIcon crop={c} className="w-6 h-6" />
                         {cropName(c, t)}
                         {selected && <Check className="w-4 h-4 ml-auto" />}
                       </button>
@@ -491,6 +492,30 @@ export function ProfileScreen() {
             </div>
 
             <p className="text-xs text-center text-gray-400 mt-6">{t('profile.termsFooter')}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Logout Confirmation Modal ──────────────────────────────── */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ background: 'rgba(0,0,0,0.45)' }}
+          onClick={() => setShowLogoutConfirm(false)}>
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+              <LogOut className="w-6 h-6 text-red-500" />
+            </div>
+            <p className="font-bold text-gray-800 text-lg mb-1">{t('profile.logoutConfirmTitle')}</p>
+            <p className="text-sm text-gray-500 mb-6">{t('profile.logoutConfirmMsg')}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-100 text-gray-700">
+                {t('common.cancel')}
+              </button>
+              <button onClick={handleLogout}
+                className="flex-1 py-3 rounded-xl font-semibold text-sm text-white bg-red-500">
+                {t('profile.logout')}
+              </button>
+            </div>
           </div>
         </div>
       )}

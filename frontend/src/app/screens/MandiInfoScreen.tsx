@@ -4,17 +4,18 @@ import { ArrowLeft, TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-reac
 import { BottomNav } from '../components/BottomNav';
 import { mandiApi } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
+import { CropIcon, MandiIcon } from '../components/CropIcons';
 
 const CROPS = [
-  { name: 'Tomato', emoji: '🍅' },
-  { name: 'Potato', emoji: '🥔' },
-  { name: 'Onion', emoji: '🧅' },
-  { name: 'Spinach', emoji: '🌿' },
+  { name: 'Tomato' },
+  { name: 'Potato' },
+  { name: 'Onion' },
+  { name: 'Spinach' },
 ];
 
 const MARKETS = [
-  { value: 'Azadpur APMC', label: 'Azadpur Mandi', emoji: '🏪' },
-  { value: 'Keshopur APMC', label: 'Keshopur Mandi', emoji: '🏬' },
+  { value: 'Azadpur APMC', label: 'Azadpur Mandi' },
+  { value: 'Keshopur APMC', label: 'Keshopur Mandi' },
 ];
 
 export function MandiInfoScreen() {
@@ -68,7 +69,7 @@ export function MandiInfoScreen() {
           {MARKETS.map(m => (
             <button key={m.value} onClick={() => { setSelectedMarket(m.value); localStorage.setItem('selectedMarket', m.value); }}
               className={`flex-1 py-2.5 px-2 rounded-2xl border-2 text-xs font-medium transition-all ${selectedMarket === m.value ? 'bg-white border-white text-[#2d6a3e]' : 'bg-white/15 border-white/20 text-white'}`}>
-              {m.emoji} {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}
+              <span className="inline-flex items-center gap-1.5"><MandiIcon mandi={m.value} className="w-5 h-5" /> {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}</span>
             </button>
           ))}
         </div>
@@ -84,14 +85,14 @@ export function MandiInfoScreen() {
 
         {!ld && (
           <>
-            <p className="text-sm text-gray-500 mb-3">
-              {selectedMandiObj.emoji} {t(selectedMandiObj.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')} — {t('info.todayPrices')}
+            <p className="text-sm text-gray-500 mb-3 flex items-center gap-1.5">
+              <MandiIcon mandi={selectedMandiObj.value} className="w-5 h-5" /> {t(selectedMandiObj.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')} — {t('info.todayPrices')}
             </p>
             <div className="space-y-3">
               {rows.map(c => (
                 <div key={c.name} className="mq-card p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#f0fdf4] rounded-2xl flex items-center justify-center text-2xl">{c.emoji}</div>
+                    <div className="w-12 h-12 bg-[#f0fdf4] rounded-2xl flex items-center justify-center"><CropIcon crop={c.name} className="w-8 h-8" /></div>
                     <div>
                       <p className="font-semibold text-gray-800">{cropName(c.name, t)}</p>
                       <p className="text-xs text-gray-400">{c.name}</p>

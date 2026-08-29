@@ -69,8 +69,10 @@ export function OtpScreen() {
         // Existing user: Directly redirect to Home
         navigate('/home');
       }
-    } catch (e: any) {
-      setError(e.message || t('login.otpVerifyError'));
+    } catch {
+      // Backend error text (jaise "Galat OTP") hamesha Hindi me aata hai —
+      // isliye raw backend message dikhane ki jagah selected language wala translation dikhao
+      setError(t('login.otpVerifyError'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export function OtpScreen() {
         setCurrentTestingOtp(res.testing_otp);
       }
     } catch (e: any) {
-      setError(t('login.otpResendError'));
+      setError(e?.status === 429 ? t('login.otpLimitError') : t('login.otpResendError'));
     } finally {
       setResending(false);
     }

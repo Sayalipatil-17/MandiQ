@@ -5,11 +5,7 @@ import { BottomNav } from '../components/BottomNav';
 import { Input } from '../components/ui/input';
 import { mandiApi } from '../../mandiq-api';
 import { useT } from '../../i18n';
-
-const CROP_ICONS: Record<string, string> = {
-  Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿',
-  Cauliflower: '🥦', Mango: '🥭', Apple: '🍎', Wheat: '🌾', Rice: '🌾',
-};
+import { CropIcon } from '../components/CropIcons';
 
 const categories = [
   { id: 'all', icon: Leaf, labelKey: 'crops.category.all' },
@@ -113,8 +109,8 @@ export function CropBrowseScreen() {
               className={`w-full bg-white rounded-2xl border-2 transition-all text-left overflow-hidden ${sel === crop.name ? 'border-[#2d6a3e] shadow-lg shadow-[#2d6a3e]/10' : crop.available ? 'border-gray-100 hover:border-[#2d6a3e]/30 hover:shadow-md' : 'border-gray-100 opacity-60'}`}>
               <div className="p-4 flex items-center gap-4">
                 {/* Crop Icon */}
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 ${crop.available ? 'bg-[#f0fdf4]' : 'bg-gray-50'}`}>
-                  {CROP_ICONS[crop.name] || '🌱'}
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${crop.available ? 'bg-[#f0fdf4]' : 'bg-gray-50'}`}>
+                  <CropIcon crop={crop.name} className="w-10 h-10" />
                 </div>
 
                 {/* Info */}

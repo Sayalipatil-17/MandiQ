@@ -14,7 +14,7 @@ import glob
 import time
 import subprocess
 from datetime import datetime, timedelta
-from rate_limiter import limiter
+from rate_limiter import limiter, OTP_DAILY_MAX
 
 from pdf_parser import parse_mandi_pdf
 from csv_parser import parse_mandi_csv
@@ -38,6 +38,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 log = logging.getLogger("mandiq")
 
 ONESIGNAL_APP_ID = os.getenv("ONESIGNAL_APP_ID", "6ad18ee9-92e5-4519-a38d-c16d2c8c0eda")
+
+# Developer testing OTP bypass — set DEV_OTP_BYPASS in .env to a unique 6-digit
+# code (never "000000" — too guessable). Leave unset in production to disable.
+DEV_OTP_BYPASS = os.getenv("DEV_OTP_BYPASS", "")
 ONESIGNAL_REST_KEY = os.getenv("ONESIGNAL_REST_KEY", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://mandi-q.vercel.app")
 
@@ -198,12 +202,11 @@ async def lifespan(app):
     scheduler.start()
     log.info("Scheduler started: daily scrape at 6AM, weekly train every Sunday 2AM, alert check at 9AM & 6PM")
 
-    # Startup pe check: agar model 1 din se purana hai ya hai hi nahi → train karo
-    import time, glob
-    models = glob.glob(str(BASE_DIR / "models" / "*.pkl"))
-    if models:
-        oldest = min(os.path.getmtime(m) for m in models)
-        days_old = (time.time() - oldest) / 86400
+    # Startup pe check: agar reversion model 7 din se purana hai ya hai hi nahi → train karo
+    import time
+    reversion_path = BASE_DIR / "models" / "mandiq_reversion.json"
+    if reversion_path.exists():
+        days_old = (time.time() - os.path.getmtime(reversion_path)) / 86400
     else:
         days_old = 999  # koi model nahi → zaroor train karo
 
@@ -304,13 +307,13 @@ class CompleteProfileRequest(BaseModel):
 class TrainRequest(BaseModel):
     commodity: str = Field(..., min_length=2, max_length=100)
     market: str = Field("Azadpur APMC", min_length=2, max_length=100)
-    model_type: Literal["ensemble", "reversion"] = "ensemble"
+    model_type: Literal["reversion"] = "reversion"
 
 class PredictRequest(BaseModel):
     commodity: str = Field(..., min_length=2, max_length=100)
     market: str = Field("Azadpur APMC", min_length=2, max_length=100)
     days_ahead: int = Field(30, ge=1, le=365)
-    model: Literal["reversion", "ensemble"] = "reversion"
+    model: Literal["reversion"] = "reversion"
 
 class CreateAlertRequest(BaseModel):
     crop: str = Field(..., min_length=2, max_length=100)
@@ -351,7 +354,12 @@ def health():
 def api_send_otp(req: SendOtpRequest, request: Request):
     if len(req.mobile) != 10 or not req.mobile.isdigit():
         raise HTTPException(400, "10 digit mobile number chahiye")
-    
+
+    ip = request.client.host if request.client else "unknown"
+    allowed, remaining = limiter.check_otp_limit(ip, req.mobile)
+    if not allowed:
+        raise HTTPException(429, f"Aaj ke liye OTP limit ({OTP_DAILY_MAX}/din) khatam ho gayi hai. Kal phir try karein.")
+
     otp = str(random.randint(100000, 999999))
     # Expiration is 5 minutes from now
     expires_at = (datetime.utcnow() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
@@ -367,7 +375,7 @@ def api_verify_otp(req: VerifyOtpRequest, request: Request):
     if not otp_record:
         raise HTTPException(400, "OTP generate nahi kiya gaya hai ya expired hai")
         
-    if req.otp != "000000" and req.otp != otp_record["otp"]:
+    if req.otp != DEV_OTP_BYPASS and req.otp != otp_record["otp"]:
         raise HTTPException(400, "Galat OTP")
         
     db.delete_otp(req.mobile)
@@ -590,24 +598,19 @@ def predict(req: PredictRequest):
         historical_data=last_data, days_ahead=req.days_ahead, model=req.model,
     )
 
-    if req.model == "reversion":
-        if isinstance(preds, dict) and "error" in preds:
-            raise HTTPException(400, preds["error"])
-        tomorrow = preds[0] if (isinstance(preds, list) and preds) else {}
-        return {"commodity": req.commodity, "market": req.market, "days_ahead": req.days_ahead,
-                "unit": "Rs./Quintal", "model": "reversion", **tomorrow, "predictions": preds}
-
+    if isinstance(preds, dict) and "error" in preds:
+        raise HTTPException(400, preds["error"])
+    tomorrow = preds[0] if (isinstance(preds, list) and preds) else {}
     return {"commodity": req.commodity, "market": req.market, "days_ahead": req.days_ahead,
-            "unit": "Rs./Quintal", "model": "ensemble", "predictions": preds}
+            "unit": "Rs./Quintal", "model": "reversion", **tomorrow, "predictions": preds}
 
 @app.get("/api/predict", tags=["Prediction"])
 def predict_get(
     commodity: str = Query(..., min_length=2, max_length=100),
     market: str = Query("Azadpur APMC", min_length=2, max_length=100),
     days_ahead: int = Query(30, ge=1, le=365),
-    model: Literal["reversion", "ensemble"] = "reversion"
 ):
-    return predict(PredictRequest(commodity=commodity, market=market, days_ahead=days_ahead, model=model))
+    return predict(PredictRequest(commodity=commodity, market=market, days_ahead=days_ahead))
 
 @app.get("/api/seasonal", tags=["Analytics"])
 def seasonal_analysis(

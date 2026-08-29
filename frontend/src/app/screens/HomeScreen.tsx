@@ -11,8 +11,26 @@ import { useT, cropName } from '../../i18n';
 import { checkAndNotifyTriggeredAlerts } from '../../onesignal';
 import { requestAllAppPermissions } from '../../permissions';
 import { analytics, logEvent } from '../../firebase';
+import { CropIcon, MandiIcon } from '../components/CropIcons';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+const priceCacheKey = (crop: string, market: string) => `mq_price_cache_${crop}_${market}`;
+
+function loadCachedPrice(crop: string, market: string): { history: PriceRecord[]; predictions: Prediction[]; cachedAt: number } | null {
+  try {
+    const raw = localStorage.getItem(priceCacheKey(crop, market));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedPrice(crop: string, market: string, history: PriceRecord[], predictions: Prediction[]) {
+  try {
+    localStorage.setItem(priceCacheKey(crop, market), JSON.stringify({ history, predictions, cachedAt: Date.now() }));
+  } catch {}
+}
 
 const MARKETS = [
   { value: 'Azadpur APMC', label: 'Azadpur Mandi', sublabel: 'Delhi (North)', emoji: '🏪', km: '12 km' },
@@ -233,6 +251,19 @@ export function HomeScreen() {
   const [history, setHistory] = useState<PriceRecord[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selectedDayIdx, setSelectedDayIdx] = useState(-1); // -1 = auto (aaj ka din)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showingCached, setShowingCached] = useState(false);
+
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
 
   const selectedMandi = MARKETS.find(m => m.value === selectedMarket);
   const selectedCropObj = CROPS.find(c => c.name === selectedCrop);
@@ -316,7 +347,18 @@ export function HomeScreen() {
   async function handleSearch() {
     if (!canSearch) return;
     logEvent(analytics, 'price_search', { crop: selectedCrop, market: selectedMarket });
-    setLoading(true); setError(null); setShowResult(false); setSelectedDayIdx(-1);
+    setError(null); setSelectedDayIdx(-1);
+
+    // Cache-first: pehle jo bhi last saved data hai wo turant dikhao (low internet
+    // waale users ke liye instant), background me fresh data fetch karte raho.
+    const cached = loadCachedPrice(selectedCrop, selectedMarket);
+    if (cached) {
+      setHistory(cached.history); setPredictions(cached.predictions);
+      setShowResult(true); setSearchTime(new Date(cached.cachedAt));
+      setShowingCached(true);
+    }
+    setLoading(!cached);
+
     try {
       const [hist, preds] = await Promise.all([
         mandiApi.getHistory(selectedCrop, selectedMarket),
@@ -325,8 +367,11 @@ export function HomeScreen() {
         mandiApi.predict(selectedCrop, 30, selectedMarket),
       ]);
       setHistory(hist); setPredictions(preds); setShowResult(true); setSearchTime(new Date());
+      setShowingCached(false);
+      saveCachedPrice(selectedCrop, selectedMarket, hist, preds);
     } catch (e: any) {
-      setError(e?.message || t('common.dataError'));
+      // Network fail — agar cache dikha chuke hain to usi pe rehne do (offline banner already dikhega)
+      if (!cached) setError(e?.message || t('common.dataError'));
     } finally {
       setLoading(false);
     }
@@ -406,7 +451,7 @@ export function HomeScreen() {
             className="w-full bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-3.5 flex items-center justify-between border border-white/20">
             {selectedMandi ? (
               <div className="flex items-center gap-2">
-                <span className="text-xl">{selectedMandi.emoji}</span>
+                <MandiIcon mandi={selectedMandi.value} className="w-7 h-7 flex-shrink-0" />
                 <div className="text-left">
                   <p className="text-white font-medium text-sm">
                     {MANDI_MAP[selectedMandi.value] ? t(MANDI_MAP[selectedMandi.value].labelKey) : selectedMandi.label}
@@ -427,7 +472,7 @@ export function HomeScreen() {
                 <button key={mandi.value}
                   onClick={() => { setSelectedMarket(mandi.value); localStorage.setItem('selectedMarket', mandi.value); logEvent(analytics, 'mandi_selected', { mandi: mandi.value }); setShowMandiDropdown(false); setShowResult(false); setCompareData([]); }}
                   className={`w-full px-4 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors ${selectedMarket === mandi.value ? 'bg-[#E6F2EB]' : ''}`}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${selectedMarket === mandi.value ? 'bg-[#1C4230]/10' : 'bg-gray-100'}`}>{mandi.emoji}</div>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedMarket === mandi.value ? 'bg-[#1C4230]/10' : 'bg-gray-100'}`}><MandiIcon mandi={mandi.value} className="w-7 h-7" /></div>
                   <div className="flex-1 text-left">
                     <p className={`font-medium text-sm ${selectedMarket === mandi.value ? 'text-[#1C4230]' : 'text-gray-800'}`}>
                       {MANDI_MAP[mandi.value] ? t(MANDI_MAP[mandi.value].labelKey) : mandi.label}
@@ -453,7 +498,7 @@ export function HomeScreen() {
                 <button key={crop.name}
                   onClick={() => { setSelectedCrop(crop.name); localStorage.setItem('selectedCrop', crop.name); logEvent(analytics, 'crop_selected', { crop: crop.name }); setShowResult(false); setCompareData([]); }}
                   className={`flex flex-col items-center py-3 px-1 rounded-2xl border-2 transition-all ${isSelected ? 'bg-white border-white' : 'bg-white/15 border-white/20'}`}>
-                  <span className="text-2xl mb-1">{crop.emoji}</span>
+                  <CropIcon crop={crop.name} className="w-9 h-9 mb-1" />
                   <p className={`text-xs font-medium leading-tight text-center ${isSelected ? 'text-[#1C4230]' : 'text-white'}`}>{cropName(crop.name, t)}</p>
                   {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#1C4230] mt-1" />}
                 </button>
@@ -469,6 +514,16 @@ export function HomeScreen() {
           {loading ? t('home.loading') : t('home.checkPrice')}
         </button>
       </div>
+
+      {/* ── OFFLINE / STALE DATA BANNER ── */}
+      {(isOffline || showingCached) && showResult && (
+        <div className="px-5 mt-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+            <span className="text-sm">📡</span>
+            <p className="text-xs text-amber-700 font-medium">{t('home.offlineBanner')}</p>
+          </div>
+        </div>
+      )}
 
       {/* ── ERROR ── */}
       {error && (
@@ -507,8 +562,8 @@ export function HomeScreen() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm font-bold text-gray-800">
-                  {selectedCropObj?.emoji} {cropName(selectedCrop, t)} · <span className="font-bold text-gray-800">
+                <p className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                  {selectedCropObj && <CropIcon crop={selectedCropObj.name} className="w-5 h-5" />} {cropName(selectedCrop, t)} · <span className="font-bold text-gray-800">
                     {selectedMandi && MANDI_MAP[selectedMandi.value] ? t(MANDI_MAP[selectedMandi.value].labelKey) : selectedMandi?.label}
                   </span>
                 </p>
@@ -595,12 +650,12 @@ export function HomeScreen() {
                       {/* ── Title strip ── */}
                       <div className="flex items-center justify-between mb-4 pt-1">
                         <div>
-                          <p className="text-sm font-bold text-gray-800">{cropName(selectedCrop, t)} — Mandi Comparison</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">Price per quintal · Today</p>
+                          <p className="text-sm font-bold text-gray-800">{cropName(selectedCrop, t)} — {t('home.mandiCompare')}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{t('home.pricePerQuintalToday')}</p>
                         </div>
                         {priceDiff > 0 && (
                           <div className="bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-right">
-                            <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">Fark</p>
+                            <p className="text-[9px] text-amber-600 font-bold uppercase tracking-wide">{t('home.difference')}</p>
                             <p className="text-sm font-black text-amber-700">₹{priceDiff}</p>
                           </div>
                         )}

@@ -27,7 +27,7 @@ export function LoginScreen() {
       // Navigate to OTP screen and pass the phone and generated dev OTP
       navigate('/otp', { state: { mobile: phone, testingOtp: res.testing_otp } });
     } catch (e: any) {
-      setError(e.message || t('login.otpSendError'));
+      setError(e?.status === 429 ? t('login.otpLimitError') : t('login.otpSendError'));
     } finally {
       setLoading(false);
     }

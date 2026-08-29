@@ -269,9 +269,9 @@ def insert_and_train(df, crop):
         if len(records) >= 60:
             try:
                 data = db.get_data(commodity=crop, market=market)
-                metrics = trainer.train(data, crop, market, "ensemble")
+                metrics = trainer.train(data, crop, market)
                 predictor.load_model(crop, market)
-                log.info(f"  {market}: CV MAPE = {metrics['cv_mape_avg']}%")
+                log.info(f"  {market}: trained on {metrics.get('rows')} rows")
             except Exception as e:
                 log.error(f"  {market}: Train failed — {e}")
         else:

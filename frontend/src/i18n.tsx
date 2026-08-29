@@ -136,6 +136,7 @@ const dict: Record<string, Entry> = {
   'alerts.step1':       { en: 'Write the price at which you want to sell', hi: 'नीचे वह कीमत लिखें जिस पर आप बेचना चाहते हैं', pa: 'ਉਹ ਭਾਅ ਲਿਖੋ ਜਿਸ ਤੇ ਤੁਸੀਂ ਵੇਚਣਾ ਚਾਹੁੰਦੇ ਹੋ', mr: 'ज्या किंमतीला विकायचे आहे ती किंमत लिहा' },
   'alerts.step2':       { en: 'When mandi price reaches your target', hi: 'जब फसल की मंडी कीमत उस लक्ष्य पर पहुँचेगी', pa: 'ਜਦੋਂ ਮੰਡੀ ਭਾਅ ਟੀਚੇ ਤੇ ਪਹੁੰਚੇਗਾ', mr: 'जेव्हा मंडी किंमत लक्ष्यावर पोहोचेल' },
   'alerts.step3':       { en: 'You will get an instant notification — right time to sell!', hi: 'आपको तुरंत सूचना मिलेगी — बेचने का सही समय!', pa: 'ਤੁਹਾਨੂੰ ਤੁਰੰਤ ਸੂਚਨਾ ਮਿਲੇਗੀ — ਵੇਚਣ ਦਾ ਸਹੀ ਸਮਾਂ!', mr: 'तुम्हाला त्वरित सूचना मिळेल — विकण्याची योग्य वेळ!' },
+  'alerts.checkTiming': { en: 'Price checked at 9:00 AM & 6:00 PM daily', hi: 'कीमत रोज़ सुबह 9 बजे और शाम 6 बजे जांची जाती है', pa: 'ਭਾਅ ਰੋਜ਼ ਸਵੇਰੇ 9 ਵਜੇ ਅਤੇ ਸ਼ਾਮ 6 ਵਜੇ ਚੈੱਕ ਹੁੰਦਾ ਹੈ', mr: 'किंमत दररोज सकाळी 9 आणि संध्याकाळी 6 वाजता तपासली जाते' },
   'alerts.selectCrop':  { en: 'Select crop:', hi: 'फसल चुनें:', pa: 'ਫਸਲ ਚੁਣੋ:', mr: 'पीक निवडा:' },
   'alerts.direction':   { en: 'Alert when price goes:', hi: 'जब कीमत जाए:', pa: 'ਜਦੋਂ ਭਾਅ ਜਾਵੇ:', mr: 'जेव्हा किंमत जाईल:' },
   'alerts.above':       { en: '📈 Above target', hi: '📈 लक्ष्य से ऊपर', pa: '📈 ਟੀਚੇ ਤੋਂ ਉੱਪਰ', mr: '📈 लक्ष्याच्या वर' },
@@ -345,6 +346,7 @@ const dict: Record<string, Entry> = {
   'login.otpVerifyError': { en: 'OTP verification failed. Please try again.', hi: 'OTP सत्यापन विफल रहा। कृपया पुनः प्रयास करें।', pa: 'OTP ਪੁਸ਼ਟੀਕਰਨ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', mr: 'OTP पडताळणी अयशस्वी. कृपया पुन्हा प्रयत्न करा.' },
   'login.otpResendError': { en: 'Resend OTP failed. Try again.', hi: 'OTP दोबारा भेजना विफल रहा। फिर प्रयास करें।', pa: 'OTP ਦੁਬਾਰਾ ਭੇਜਣਾ ਅਸਫਲ ਰਿਹਾ। ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', mr: 'OTP पुन्हा पाठवणे अयशस्वी. पुन्हा प्रयत्न करा.' },
   'login.otpSendError':   { en: 'OTP sending failed. Please check mobile number.', hi: 'OTP भेजना विफल रहा। कृपया मोबाइल नंबर जांचें।', pa: 'OTP ਭੇਜਣਾ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਮੋਬਾਈਲ ਨੰਬਰ ਦੀ ਜਾਂਚ ਕਰੋ।', mr: 'OTP पाठवणे अयशस्वी. कृपया मोबाईल नंबर तपासा.' },
+  'login.otpLimitError':  { en: "Daily OTP limit reached. Please try again tomorrow.", hi: 'आज की OTP सीमा पूरी हो गई। कृपया कल फिर प्रयास करें।', pa: 'ਅੱਜ ਦੀ OTP ਸੀਮਾ ਪੂਰੀ ਹੋ ਗਈ। ਕਿਰਪਾ ਕਰਕੇ ਕੱਲ੍ਹ ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।', mr: 'आजची OTP मर्यादा संपली. कृपया उद्या पुन्हा प्रयत्न करा.' },
 
   'pred.subtitle':         { en: 'AI-powered price forecast', hi: 'एआई-आधारित मूल्य पूर्वानुमान', pa: 'ਏਆਈ-ਆਧਾਰਿਤ ਮੁੱਲ ਭਵਿੱਖਬਾਣੀ', mr: 'एआय-आधारित किंमत अंदाज' },
   'pred.seasonalAnalysis': { en: 'Seasonal market analysis', hi: 'मौसमी बाजार विश्लेषण', pa: 'ਮੌਸਮੀ ਬਾਜ਼ਾਰ ਵਿਸ਼ਲੇਸ਼ਣ', mr: 'हंगामी बाजार विश्लेषण' },
@@ -359,6 +361,12 @@ const dict: Record<string, Entry> = {
   'mandi.keshopur.desc':   { en: 'Delhi (West)', hi: 'दिल्ली (पश्चिम)', pa: 'ਦਿੱਲੀ (ਪੱਛਮ)', mr: 'दिल्ली (पश्चिम)' },
   'home.moreThanOther':    { en: '+₹{diff} more than other mandi', hi: '+₹{diff} दूसरी मंडी से ज़्यादा', pa: '+₹{diff} ਦੂਜੀ ਮੰਡੀ ਨਾਲੋਂ ਵੱਧ', mr: '+₹{diff} इतर मंडीपेक्षा जास्त' },
   'common.less':           { en: '-₹{diff} less', hi: '-₹{diff} कम', pa: '-₹{diff} ਘੱਟ', mr: '-₹{diff} कमी' },
+  'home.pricePerQuintalToday': { en: 'Price per quintal · Today', hi: 'मूल्य प्रति क्विंटल · आज', pa: 'ਮੁੱਲ ਪ੍ਰਤੀ ਕੁਇੰਟਲ · ਅੱਜ', mr: 'किंमत प्रति क्विंटल · आज' },
+  'home.difference':       { en: 'Difference', hi: 'फ़र्क', pa: 'ਫ਼ਰਕ', mr: 'फरक' },
+  'home.offlineBanner':    { en: "You're offline — showing last saved price", hi: 'आप ऑफलाइन हैं — आखिरी सेव की गई कीमत दिखा रहे हैं', pa: 'ਤੁਸੀਂ ਆਫਲਾਈਨ ਹੋ — ਆਖਰੀ ਸੇਵ ਕੀਤਾ ਭਾਅ ਦਿਖਾ ਰਹੇ ਹਾਂ', mr: 'तुम्ही ऑफलाइन आहात — शेवटची जतन केलेली किंमत दाखवत आहोत' },
+  'profile.logoutConfirmTitle': { en: 'Logout?', hi: 'लॉग आउट करें?', pa: 'ਲੌਗ ਆਊਟ ਕਰੀਏ?', mr: 'लॉग आउट करायचे?' },
+  'profile.logoutConfirmMsg':   { en: 'Are you sure you want to logout?', hi: 'क्या आप वाकई लॉग आउट करना चाहते हैं?', pa: 'ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਲੌਗ ਆਊਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?', mr: 'तुम्हाला खरंच लॉग आउट करायचे आहे का?' },
+  'common.cancel':               { en: 'Cancel', hi: 'रद्द करें', pa: 'ਰੱਦ ਕਰੋ', mr: 'रद्द करा' },
 };
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string) => string };

@@ -5,9 +5,9 @@ import { BottomNav } from '../components/BottomNav';
 import { SupportChat } from '../components/SupportChat';
 import { useT, cropName } from '../../i18n';
 import { showLocalNotification, checkAndNotifyTriggeredAlerts } from '../../onesignal';
+import { CropIcon } from '../components/CropIcons';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-const CROP_ICONS: Record<string, string> = { Tomato: '🍅', Potato: '🥔', Onion: '🧅', Spinach: '🌿' };
 
 type Alert = { id: number; crop: string; market: string; target_price: number; direction: string; created_at: string };
 
@@ -186,6 +186,10 @@ export function AlertsScreen() {
             <p className="text-xs text-gray-600">2️⃣ {t('alerts.step2')}</p>
             <p className="text-xs text-gray-600">3️⃣ {t('alerts.step3')}</p>
           </div>
+          <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-[#2d6a3e]/10">
+            <span className="text-xs">🕒</span>
+            <p className="text-xs font-medium text-[#2d6a3e]">{t('alerts.checkTiming')}</p>
+          </div>
         </div>
 
         {/* Create Alert */}
@@ -206,7 +210,7 @@ export function AlertsScreen() {
             {CROPS.map(c => (
               <button key={c.name} onClick={() => setSelectedCrop(c.name)}
                 className={`flex flex-col items-center py-2.5 px-1 rounded-2xl border-2 transition-all ${selectedCrop === c.name ? 'bg-[#2d6a3e] border-[#2d6a3e]' : 'bg-gray-50 border-gray-100'}`}>
-                <span className="text-xl mb-1">{c.emoji}</span>
+                <CropIcon crop={c.name} className="w-8 h-8 mb-1" />
                 <p className={`text-xs font-medium leading-tight text-center ${selectedCrop === c.name ? 'text-white' : 'text-gray-600'}`}>{cropName(c.name, t)}</p>
               </button>
             ))}
@@ -319,7 +323,7 @@ export function AlertsScreen() {
           <div className="flex flex-wrap gap-2 mt-2">
             {userCrops.map(c => (
               <span key={c} className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fff7ed] text-[#c2410c] border border-[#f97316]/20">
-                <span>{CROP_ICONS[c] || '🌱'}</span>
+                <CropIcon crop={c} className="w-4 h-4" />
                 <span>{cropName(c, t)}</span>
               </span>
             ))}
@@ -351,7 +355,7 @@ export function AlertsScreen() {
             {alerts.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-[#f0fdf4] rounded-2xl p-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{CROP_ICONS[a.crop] || '🌱'}</span>
+                  <CropIcon crop={a.crop} className="w-7 h-7 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{cropName(a.crop, t)}</p>
                     <p className="text-xs text-gray-500">
@@ -393,7 +397,7 @@ export function AlertsScreen() {
             {notifications.map(a => (
               <div key={a.id} className="flex items-center justify-between bg-gray-50 rounded-2xl p-4 border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{CROP_ICONS[a.crop] || '🌱'}</span>
+                  <CropIcon crop={a.crop} className="w-7 h-7 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{cropName(a.crop, t)}</p>
                     <p className="text-xs text-gray-500">

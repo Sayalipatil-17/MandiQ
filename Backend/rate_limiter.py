@@ -15,6 +15,9 @@ PUBLIC_MAX = int(os.environ.get("RATE_LIMIT_PUBLIC_MAX_REQUESTS", 60))    # defa
 AUTH_ACTION_WINDOW = int(os.environ.get("RATE_LIMIT_AUTH_ACTION_WINDOW_SEC", 60)) # default 60 seconds
 AUTH_ACTION_MAX = int(os.environ.get("RATE_LIMIT_AUTH_ACTION_MAX_REQUESTS", 200))  # default 200 requests
 
+OTP_DAILY_WINDOW = 24 * 60 * 60
+OTP_DAILY_MAX = int(os.environ.get("RATE_LIMIT_OTP_DAILY_MAX", 10))  # default 10 OTPs/day/mobile
+
 class InMemoryRateLimiter:
     def __init__(self):
         # Maps client identifier -> list of request timestamps
@@ -36,7 +39,16 @@ class InMemoryRateLimiter:
         return True
 
     def check_otp_limit(self, ip: str, mobile: str) -> tuple[bool, int]:
-        return True, 0
+        """10 OTP/din/mobile number — SMS abuse aur cost rokne ke liye."""
+        now = time.time()
+        key = f"otp:{mobile}"
+        with self.lock:
+            self.clean_old_requests(key, OTP_DAILY_WINDOW, now)
+            sent_today = len(self.requests.get(key, []))
+            if sent_today >= OTP_DAILY_MAX:
+                return False, 0
+            self.requests.setdefault(key, []).append(now)
+            return True, OTP_DAILY_MAX - sent_today - 1
 
     def reset_otp_backoff(self, ip: str, mobile: str):
         pass
