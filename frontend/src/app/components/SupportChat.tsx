@@ -361,57 +361,55 @@ export function SupportChat() {
     }, 450);
   }
 
-  function sendPriceQuery(query: string, label: string) {
+  async function sendPriceQuery(query: string, label: string) {
     const userMsg: Message = { from: 'user', text: label };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setTyping(true);
-    setTimeout(() => {
-      const detected = detectPriceQuery(query);
-      if (detected) {
-        const { text, priceCard } = buildPriceResponse(detected.crop, detected.mandi, lang);
-        const suggs = getPriceSuggestions(detected.crop, lang);
-        deliverBotMessage({ from: 'bot', text, priceCard, suggestions: suggs }, text);
-      } else {
-        noAnswerSeedRef.current += 1;
-        deliverBotMessage({
-          from: 'bot', text: t('support.noAnswer'), showEmail: true,
-          suggestions: getDefaultSuggestions(noAnswerSeedRef.current, lang),
-        }, t('support.noAnswer'));
-      }
-    }, 500);
+    await new Promise(r => setTimeout(r, 500));
+    const detected = detectPriceQuery(query);
+    if (detected) {
+      const { text, priceCard } = await buildPriceResponse(detected.crop, detected.mandi, lang);
+      const suggs = getPriceSuggestions(detected.crop, lang);
+      deliverBotMessage({ from: 'bot', text, priceCard, suggestions: suggs }, text);
+    } else {
+      noAnswerSeedRef.current += 1;
+      deliverBotMessage({
+        from: 'bot', text: t('support.noAnswer'), showEmail: true,
+        suggestions: getDefaultSuggestions(noAnswerSeedRef.current, lang),
+      }, t('support.noAnswer'));
+    }
   }
 
-  function send(text: string) {
+  async function send(text: string) {
     if (!text.trim()) return;
     const trimmed = text.trim();
     const userMsg: Message = { from: 'user', text: trimmed };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setTyping(true);
+    await new Promise(r => setTimeout(r, 500));
 
-    setTimeout(() => {
-      // 1. Try price query detection first
-      const priceDetect = detectPriceQuery(trimmed);
-      if (priceDetect) {
-        const { text: resp, priceCard } = buildPriceResponse(priceDetect.crop, priceDetect.mandi, lang);
-        const suggs = getPriceSuggestions(priceDetect.crop, lang);
-        deliverBotMessage({ from: 'bot', text: resp, priceCard, suggestions: suggs }, resp);
-        return;
-      }
-      // 2. QA keyword match
-      const { answer, found, matchedIndex } = findAnswer(trimmed, lang);
-      if (found) {
-        deliverBotMessage({ from: 'bot', text: answer, suggestions: getRelatedSuggestions(matchedIndex, lang) }, answer);
-        return;
-      }
-      // 3. No match
-      noAnswerSeedRef.current += 1;
-      deliverBotMessage({
-        from: 'bot', text: t('support.noAnswer'), showEmail: true,
-        suggestions: getDefaultSuggestions(noAnswerSeedRef.current, lang),
-      }, t('support.noAnswer'));
-    }, 500);
+    // 1. Try price query detection first
+    const priceDetect = detectPriceQuery(trimmed);
+    if (priceDetect) {
+      const { text: resp, priceCard } = await buildPriceResponse(priceDetect.crop, priceDetect.mandi, lang);
+      const suggs = getPriceSuggestions(priceDetect.crop, lang);
+      deliverBotMessage({ from: 'bot', text: resp, priceCard, suggestions: suggs }, resp);
+      return;
+    }
+    // 2. QA keyword match
+    const { answer, found, matchedIndex } = findAnswer(trimmed, lang);
+    if (found) {
+      deliverBotMessage({ from: 'bot', text: answer, suggestions: getRelatedSuggestions(matchedIndex, lang) }, answer);
+      return;
+    }
+    // 3. No match
+    noAnswerSeedRef.current += 1;
+    deliverBotMessage({
+      from: 'bot', text: t('support.noAnswer'), showEmail: true,
+      suggestions: getDefaultSuggestions(noAnswerSeedRef.current, lang),
+    }, t('support.noAnswer'));
   }
 
   const sttLang: Record<Lang, string> = { en: 'en-IN', hi: 'hi-IN', pa: 'hi-IN', mr: 'hi-IN' };
