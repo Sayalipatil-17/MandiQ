@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from captcha_solver import get_solved_captcha, report_bad_captcha
+from captcha_solver import get_solved_captcha, report_bad_captcha, is_rate_limited
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(message)s")
 log = logging.getLogger("daily_scrape")
@@ -32,6 +32,35 @@ DELHI_MARKETS = {
     "shahdara": "Shahdara APMC",
 }
 
+# UP (Uttar Pradesh) mandi support
+# Prayagraj district ki mandis AGMARKNET ko sirf ye 3 commodities report karti hain.
+# Okra(71) / RidgeGourd(132) / LongBeans(75) ke IDs sahi hain, par Prayagraj mein
+# unka data hota hi nahi — 01-Aug..07-Sep-2026 window mein 0 rows (API + CSV dono se
+# verify kiya). Isliye yahan sirf teen hi rakhe hain.
+UP_CROPS = {
+    "Tomato": "65",
+    "Potato": "24",
+    "Onion": "23",
+}
+# Key = API ka market_name (lowercase, EXACT match), value = DB mein store hone wala
+# naam. Substring match yahan mat karna — "sirsa" jaisi key Firozabad ki
+# "Sirsaganj APMC" se bhi match ho jati hai, jo bilkul alag mandi hai.
+# Prayagraj district ki baaki mandis (Sirsa/Ajuha/Jasra/Lediyari) bahut kam din
+# report karti hain, isliye sirf Prayagraj APMC rakhi hai.
+UP_MARKETS = {
+    "prayagraj apmc": "Prayagraj APMC",  # Potato 38/38, Tomato 36/38, Onion 34/38 din
+    "allahabad apmc": "Prayagraj APMC",  # purane records mein Prayagraj = Allahabad
+}
+# Captcha accuracy ~91% hai (captcha_local.py ka template matching; 2Captcha
+# sirf ~25% deta tha). 5 attempts pe fail hone ka chance ~0.001%, aur local solve
+# muft + instant hai — retry ki koi keemat nahi.
+MAX_CAPTCHA_ATTEMPTS = 5
+# Network blip (DNS fail) permanent error nahi hota — ruk ke dobara try karo.
+MAX_NETWORK_RETRIES = 6
+
+UP_STATE_CODE = "34"     # Uttar Pradesh AGMARKNET state code (confirmed)
+UP_DISTRICT_CODE = "646"  # Prayagraj district — statewide fetch se galat mandis aati hain
+
 SEASON_MAP = {
     12: "winter", 1: "winter", 2: "winter",
     3: "summer", 4: "summer", 5: "summer",
@@ -50,7 +79,7 @@ DATA_DIR = "data"
 
 
 
-def insert_to_db(df: pd.DataFrame, crop: str):
+def insert_to_db(df: pd.DataFrame, crop: str, state: str = "NCT of Delhi", district: str = "Delhi"):
     """DB mein insert karo bina training ke."""
     sys.path.insert(0, os.path.dirname(__file__))
     from database import MandiDB
@@ -66,8 +95,8 @@ def insert_to_db(df: pd.DataFrame, crop: str):
             "modal_price": float(row["modal_price_rs_quintal"]) if pd.notna(row["modal_price_rs_quintal"]) else None,
             "arrival_qty": float(row["arrival_qty_mt"]) if pd.notna(row["arrival_qty_mt"]) else None,
             "producing_region": PRODUCING_REGION.get(crop, {}).get(month, "agra"),
-            "state": "NCT of Delhi",
-            "district": "Delhi",
+            "state": state,
+            "district": district,
             "group": "Vegetables",
             "price_unit": "Rs./Quintal",
             "arrival_unit": "Metric Tonnes",
@@ -89,11 +118,162 @@ def get_last_scraped_date(crop: str) -> str:
         if data:
             dates = [r["date"] for r in data if r.get("date")]
             if dates:
-                last = max(dates)
-                return last  # "YYYY-MM-DD"
+                return max(dates)
     except Exception as e:
         log.warning(f"  [{crop}] DB check failed: {e}")
     return (dt.date.today() - dt.timedelta(days=30)).isoformat()
+
+
+def get_last_scraped_date_for_market(crop: str, market: str) -> str:
+    """Specific market ke liye last scraped date. Default: 90 din pehle (UP ke liye initial load)."""
+    try:
+        from database import MandiDB
+        db = MandiDB()
+        data = db.get_data(commodity=crop, market=market)
+        if data:
+            dates = [r["date"] for r in data if r.get("date")]
+            if dates:
+                return max(dates)
+    except Exception as e:
+        log.warning(f"  [{crop}@{market}] DB check failed: {e}")
+    return (dt.date.today() - dt.timedelta(days=90)).isoformat()
+
+
+def get_up_last_scraped_date(crop: str) -> str:
+    """
+    Saare UP markets mein se SABSE PURANI last-scraped date.
+
+    Ek hi market (Prayagraj) dekhne se naya market add karne par backfill hota hi
+    nahi — Prayagraj up-to-date hota hai to loop skip kar deta hai. Minimum lene se
+    naya market (jiska data 0 hai, yaani 90-din default) poore range ko kheench leta
+    hai. Ek hi API call saare markets ka data laati hai, to extra cost nahi hai.
+    """
+    return min(
+        get_last_scraped_date_for_market(crop, market)
+        for market in set(UP_MARKETS.values())
+    )
+
+
+DATA_TYPE_BOTH = "100006"   # price + arrival — sirf ~1 saal peeche tak
+DATA_TYPE_PRICE = "100004"  # sirf price — 2021 se, purani history ke liye
+
+
+def scrape_up_range(crop: str, commodity_id: str, from_date: str, to_date: str,
+                    data_type: str = DATA_TYPE_BOTH) -> pd.DataFrame:
+    """
+    UP mandis ke liye AGMARKNET scrape karo.
+
+    data_type=DATA_TYPE_PRICE par arrival quantity nahi aati (response mein woh
+    column hi nahi hota) — us case mein arrival_qty_mt NaN rehta hai. Iska fayda
+    ye hai ki 2021 tak ka data mil jata hai, jabki "Both" mode sirf 1 saal deta hai.
+    """
+    log.info(f"[UP][{crop}] Scraping {from_date} → {to_date}...")
+    body = {
+        "data_type": data_type, "commodity": commodity_id, "group": "6",
+        "state": f"[{UP_STATE_CODE}]", "district": f"[{UP_DISTRICT_CODE}]", "variety": "[100007]",
+        "grade": "[100003]", "market": "[100002]",
+        "from_date": from_date, "to_date": to_date,
+        "page": "1", "limit": "500",
+    }
+
+    all_rows = []
+    page = 1
+    while page <= 100:
+        body["page"] = str(page)
+        js = None
+        attempt = 0
+        throttled = 0
+        netfail = 0
+        while attempt < MAX_CAPTCHA_ATTEMPTS:
+            try:
+                captcha_key, captcha_answer, captcha_id = get_solved_captcha()
+            except Exception as e:
+                # Aksar ye network blip hota hai (DNS fail), permanent error nahi.
+                # Pehle yahan turant return tha — 10 second ke blip se poora
+                # backfill (kai saal ka data) mar jata tha. Ab wait karke retry.
+                netfail += 1
+                if netfail > MAX_NETWORK_RETRIES:
+                    log.error(f"  Captcha service {netfail} baar fail: {e}")
+                    return pd.DataFrame()
+                wait = min(60, 10 * netfail)
+                log.warning(f"  Network/captcha fail ({netfail}/{MAX_NETWORK_RETRIES}), {wait}s baad retry...")
+                time.sleep(wait)
+                continue
+            body["captcha_key"] = captcha_key
+            body["captcha"] = captcha_answer
+            try:
+                r = req.post(API_URL, json=body, headers=API_HEADERS, timeout=90)
+                js = r.json()
+            except Exception as e:
+                netfail += 1
+                if netfail > MAX_NETWORK_RETRIES:
+                    log.error(f"  Fetch {netfail} baar fail: {e}")
+                    return pd.DataFrame()
+                wait = min(60, 10 * netfail)
+                log.warning(f"  Fetch fail ({netfail}/{MAX_NETWORK_RETRIES}), {wait}s baad retry...")
+                time.sleep(wait)
+                continue
+            if js.get("code") in ("TOKEN_OR_CAPTCHA_REQUIRED", "INVALID_CAPTCHA"):
+                # Rate limit aur galat captcha dono ka code same hai. Rate limit
+                # pe captcha sahi hota hai — use bad report mat karo aur attempt
+                # bhi mat gino, warna sahi captchas waste hote hain aur page skip.
+                if is_rate_limited(js):
+                    throttled += 1
+                    if throttled > 10:
+                        log.error("  Rate limited 10 baar, giving up")
+                        js = None
+                        break
+                    wait = min(60, 5 * 2 ** (throttled - 1))
+                    log.warning(f"  Rate limited, {wait}s backoff ({throttled}/10)...")
+                    time.sleep(wait)
+                    js = None
+                    continue
+                attempt += 1
+                log.warning(f"  Captcha rejected (attempt {attempt}/{MAX_CAPTCHA_ATTEMPTS}), reporting bad + retrying...")
+                report_bad_captcha(captcha_id)
+                js = None
+                continue
+            break
+
+        if js is None:
+            break
+        if not js.get("status"):
+            log.warning(f"  API: {js.get('message', 'No data available')}")
+            break
+
+        for rec in js.get("data", {}).get("records", []):
+            all_rows.extend(rec.get("data", []))
+
+        recs = js.get("data", {}).get("records", [])
+        pag = {}
+        for rec in recs:
+            pag_list = rec.get("pagination", [{}])
+            if pag_list:
+                pag = pag_list[0]
+                break
+        if pag.get("current_page", 1) >= pag.get("total_pages", 1):
+            break
+        page += 1
+        time.sleep(0.5)
+
+    if not all_rows:
+        log.info(f"  No UP data for {crop} ({from_date} → {to_date})")
+        return pd.DataFrame()
+
+    pnum = lambda x: pd.to_numeric(str(x).replace(",", ""), errors="coerce")
+    raw = pd.DataFrame(all_rows)
+    df = pd.DataFrame({
+        "date": pd.to_datetime(raw["arrival_date"], dayfirst=True, errors="coerce"),
+        "market": raw["market_name"].map(
+            lambda m: UP_MARKETS.get(str(m).strip().lower())
+        ),
+        # Price-only mode mein arrival_qty column response mein hota hi nahi
+        "arrival_qty_mt": raw["arrival_qty"].map(pnum) if "arrival_qty" in raw else np.nan,
+        "modal_price_rs_quintal": raw["model_price"].map(pnum),
+    }).dropna(subset=["market", "date", "modal_price_rs_quintal"]).reset_index(drop=True)
+
+    log.info(f"  [UP] {len(df)} rows | markets: {sorted(df['market'].unique())}")
+    return df
 
 
 def scrape_range(crop: str, commodity_id: str, from_date: str, to_date: str) -> pd.DataFrame:
@@ -104,7 +284,7 @@ def scrape_range(crop: str, commodity_id: str, from_date: str, to_date: str) -> 
         "state": "[25]", "district": "[100001]", "variety": "[100007]",
         "grade": "[100003]", "market": "[100002]",
         "from_date": from_date, "to_date": to_date,
-        "page": "1", "limit": "50",
+        "page": "1", "limit": "500",
     }
 
     all_rows = []
@@ -112,22 +292,55 @@ def scrape_range(crop: str, commodity_id: str, from_date: str, to_date: str) -> 
     while page <= 100:
         body["page"] = str(page)
         js = None
-        for attempt in range(5):
+        attempt = 0
+        throttled = 0
+        netfail = 0
+        while attempt < MAX_CAPTCHA_ATTEMPTS:
             try:
                 captcha_key, captcha_answer, captcha_id = get_solved_captcha()
             except Exception as e:
-                log.error(f"  Captcha solve error: {e}")
-                return pd.DataFrame()
+                # Aksar ye network blip hota hai (DNS fail), permanent error nahi.
+                # Pehle yahan turant return tha — 10 second ke blip se poora
+                # backfill (kai saal ka data) mar jata tha. Ab wait karke retry.
+                netfail += 1
+                if netfail > MAX_NETWORK_RETRIES:
+                    log.error(f"  Captcha service {netfail} baar fail: {e}")
+                    return pd.DataFrame()
+                wait = min(60, 10 * netfail)
+                log.warning(f"  Network/captcha fail ({netfail}/{MAX_NETWORK_RETRIES}), {wait}s baad retry...")
+                time.sleep(wait)
+                continue
             body["captcha_key"] = captcha_key
             body["captcha"] = captcha_answer
             try:
                 r = req.post(API_URL, json=body, headers=API_HEADERS, timeout=90)
                 js = r.json()
             except Exception as e:
-                log.error(f"  Fetch error: {e}")
-                return pd.DataFrame()
+                netfail += 1
+                if netfail > MAX_NETWORK_RETRIES:
+                    log.error(f"  Fetch {netfail} baar fail: {e}")
+                    return pd.DataFrame()
+                wait = min(60, 10 * netfail)
+                log.warning(f"  Fetch fail ({netfail}/{MAX_NETWORK_RETRIES}), {wait}s baad retry...")
+                time.sleep(wait)
+                continue
             if js.get("code") in ("TOKEN_OR_CAPTCHA_REQUIRED", "INVALID_CAPTCHA"):
-                log.warning(f"  Captcha rejected (attempt {attempt + 1}/5), reporting bad + retrying...")
+                # Rate limit aur galat captcha dono ka code same hai. Rate limit
+                # pe captcha sahi hota hai — use bad report mat karo aur attempt
+                # bhi mat gino, warna sahi captchas waste hote hain aur page skip.
+                if is_rate_limited(js):
+                    throttled += 1
+                    if throttled > 10:
+                        log.error("  Rate limited 10 baar, giving up")
+                        js = None
+                        break
+                    wait = min(60, 5 * 2 ** (throttled - 1))
+                    log.warning(f"  Rate limited, {wait}s backoff ({throttled}/10)...")
+                    time.sleep(wait)
+                    js = None
+                    continue
+                attempt += 1
+                log.warning(f"  Captcha rejected (attempt {attempt}/{MAX_CAPTCHA_ATTEMPTS}), reporting bad + retrying...")
                 report_bad_captcha(captcha_id)
                 js = None
                 continue
@@ -177,25 +390,39 @@ def scrape_range(crop: str, commodity_id: str, from_date: str, to_date: str) -> 
 
 
 def main():
-    # Kal tak scrape karo — aaj ka data shaam tak Agmarknet upload karta hai
     yesterday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
-
     log.info(f"\n{'='*50}\nMandiQ Catch-up Scraper — target upto {yesterday}\n{'='*50}")
 
     total = 0
+
+    # ── Delhi mandis ──
+    log.info("\n--- Delhi Mandis ---")
     for crop, cid in CROPS.items():
         last_date = get_last_scraped_date(crop)
         from_date = (dt.date.fromisoformat(last_date) + dt.timedelta(days=1)).isoformat()
-
         if from_date > yesterday:
             log.info(f"[{crop}] Already up to date (last={last_date}), skipping")
             continue
-
         log.info(f"[{crop}] Last scraped: {last_date} → fetching {from_date} to {yesterday}")
         df = scrape_range(crop, cid, from_date, yesterday)
         if not df.empty:
             df["commodity"] = crop
-            total += insert_to_db(df, crop)
+            total += insert_to_db(df, crop, state="NCT of Delhi", district="Delhi")
+        time.sleep(1)
+
+    # ── UP mandis (Prayagraj district: Prayagraj / Sirsa / Ajuha / Jasra) ──
+    log.info(f"\n--- UP Mandis ({', '.join(sorted(set(UP_MARKETS.values())))}) ---")
+    for crop, cid in UP_CROPS.items():
+        last_date = get_up_last_scraped_date(crop)
+        from_date = (dt.date.fromisoformat(last_date) + dt.timedelta(days=1)).isoformat()
+        if from_date > yesterday:
+            log.info(f"[UP][{crop}] Already up to date (last={last_date}), skipping")
+            continue
+        log.info(f"[UP][{crop}] Last scraped: {last_date} → fetching {from_date} to {yesterday}")
+        df = scrape_up_range(crop, cid, from_date, yesterday)
+        if not df.empty:
+            df["commodity"] = crop
+            total += insert_to_db(df, crop, state="Uttar Pradesh", district="Prayagraj")
         time.sleep(1)
 
     log.info(f"\nDone. Total records updated: {total}")

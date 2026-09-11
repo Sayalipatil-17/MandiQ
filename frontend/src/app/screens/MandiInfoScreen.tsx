@@ -5,23 +5,17 @@ import { BottomNav } from '../components/BottomNav';
 import { mandiApi } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
 import { CropIcon, MandiIcon } from '../components/CropIcons';
-
-const CROPS = [
-  { name: 'Tomato' },
-  { name: 'Potato' },
-  { name: 'Onion' },
-  { name: 'Spinach' },
-];
-
-const MARKETS = [
-  { value: 'Azadpur APMC', label: 'Azadpur Mandi' },
-  { value: 'Keshopur APMC', label: 'Keshopur Mandi' },
-];
+import { MANDI_MAP, cropsForState, defaultMarketForState, getSelectedState, marketsForState } from '../config/mandis';
 
 export function MandiInfoScreen() {
   const nav = useNavigate();
   const { t } = useT();
-  const [selectedMarket, setSelectedMarket] = useState(localStorage.getItem('selectedMarket') || 'Azadpur APMC');
+  // Home screen pe chuna hua state follow karo — warna UP choose karke bhi
+  // yahan Delhi ki mandis dikhti thi.
+  const state = getSelectedState();
+  const MARKETS = marketsForState(state);
+  const CROPS = cropsForState(state);
+  const [selectedMarket, setSelectedMarket] = useState(() => defaultMarketForState(state));
   const [ld, setLd] = useState(true);
   const [rows, setRows] = useState<any[]>([]);
 
@@ -48,6 +42,10 @@ export function MandiInfoScreen() {
   }, [selectedMarket]);
 
   const selectedMandiObj = MARKETS.find(m => m.value === selectedMarket) || MARKETS[0];
+  const mandiLabel = (market: string, short = false) => {
+    const keys = MANDI_MAP[market];
+    return keys ? t(short ? keys.shortKey : keys.labelKey) : market;
+  };
 
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
@@ -65,11 +63,12 @@ export function MandiInfoScreen() {
 
         {/* Mandi selector */}
         <p className="text-white/70 text-xs mb-2">{t('info.selectMandi')}</p>
-        <div className="flex gap-2">
+        {/* UP mein 4 mandis hain — 2 se zyada ho to wrap ho jaye, squeeze na ho */}
+        <div className="flex flex-wrap gap-2">
           {MARKETS.map(m => (
             <button key={m.value} onClick={() => { setSelectedMarket(m.value); localStorage.setItem('selectedMarket', m.value); }}
-              className={`flex-1 py-2.5 px-2 rounded-2xl border-2 text-xs font-medium transition-all ${selectedMarket === m.value ? 'bg-white border-white text-[#2d6a3e]' : 'bg-white/15 border-white/20 text-white'}`}>
-              <span className="inline-flex items-center gap-1.5"><MandiIcon mandi={m.value} className="w-5 h-5" /> {t(m.value === 'Azadpur APMC' ? 'mandi.azadpur.short' : 'mandi.keshopur.short')}</span>
+              className={`flex-1 min-w-[calc(50%-0.25rem)] py-2.5 px-2 rounded-2xl border-2 text-xs font-medium transition-all ${selectedMarket === m.value ? 'bg-white border-white text-[#2d6a3e]' : 'bg-white/15 border-white/20 text-white'}`}>
+              <span className="inline-flex items-center gap-1.5"><MandiIcon mandi={m.value} className="w-5 h-5" /> {mandiLabel(m.value, true)}</span>
             </button>
           ))}
         </div>
@@ -86,7 +85,7 @@ export function MandiInfoScreen() {
         {!ld && (
           <>
             <p className="text-sm text-gray-500 mb-3 flex items-center gap-1.5">
-              <MandiIcon mandi={selectedMandiObj.value} className="w-5 h-5" /> {t(selectedMandiObj.value === 'Azadpur APMC' ? 'mandi.azadpur' : 'mandi.keshopur')} — {t('info.todayPrices')}
+              <MandiIcon mandi={selectedMandiObj.value} className="w-5 h-5" /> {mandiLabel(selectedMandiObj.value)} — {t('info.todayPrices')}
             </p>
             <div className="space-y-3">
               {rows.map(c => (

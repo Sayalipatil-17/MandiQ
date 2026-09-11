@@ -217,6 +217,52 @@ async def lifespan(app):
         log.info(f"Models {days_old:.1f} din purane hain — sirf aaj ka scrape chalayenge")
         subprocess.Popen([sys.executable, "daily_scrape.py"], cwd=str(BASE_DIR))
 
+    # UP mandi backfill + train: agar Prayagraj APMC mein koi data nahi to AGMARKNET
+    # se ASLI data laao, phir train karo.
+    # NOTE: pehle yahan seed_up_data.py chalta tha jo random-walk se nakli bhaav
+    # bharta tha — model uspe train hota tha aur users ko wahi dikhte the. Ab sirf
+    # asli data. Backfill fail ho to data khaali rahega (nakli se behtar hai).
+    try:
+        from database import MandiDB as _DB
+        _db = _DB()
+        _up_data = _db.get_data(commodity="Tomato", market="Prayagraj APMC")
+        if not _up_data:
+            log.info("UP mandi data nahi mila — AGMARKNET se asli data backfill kar rahe hain...")
+            subprocess.Popen([sys.executable, "backfill_up_data.py"], cwd=str(BASE_DIR))
+            # Backfill ke baad train karo. Captcha + rate-limit ki wajah se ye lamba
+            # chalta hai, isliye fixed sleep nahi — script DB poll karti hai.
+            subprocess.Popen(
+                [sys.executable, "train_up_after_backfill.py"], cwd=str(BASE_DIR)
+            )
+        else:
+            log.info(f"UP mandi data already present ({len(_up_data)} records)")
+            # Check if UP mandi models trained hain.
+            # MandiQReversion.save() params ko SEEDHA top-level pe dump karta hai —
+            # koi "params" wrapper nahi hota. Pehle yahan .get("params", {}) tha, jo
+            # hamesha {} deta tha, isliye har server start pe training chalti thi.
+            _rev_path = BASE_DIR / "models" / "mandiq_reversion.json"
+            if _rev_path.exists():
+                import json as _json
+                _model = _json.loads(_rev_path.read_text())
+                _params = _model.get("params", _model) if isinstance(_model, dict) else {}
+                # Kisi bhi UP mandi ka key mil gaya to training ho chuki hai. Ek
+                # specific crop dhundhne se dikkat ye hai ki jis pair ke paas 200+
+                # rows nahi hote woh model mein aata hi nahi (mandiq_reversion.py),
+                # aur training har baar chalti rehti.
+                _up_suffixes = ("prayagraj apmc", "sirsa apmc", "ajuha apmc", "jasra apmc")
+                _needs_train = not any(
+                    str(k).endswith(_up_suffixes) for k in _params
+                )
+            else:
+                _needs_train = True
+            if _needs_train:
+                log.info("UP mandi models nahi hain — retraining reversion model...")
+                subprocess.Popen([sys.executable, "train_up_mandis.py"], cwd=str(BASE_DIR))
+            else:
+                log.info("UP mandi models already trained.")
+    except Exception as _e:
+        log.warning(f"UP seed/train check failed: {_e}")
+
     yield
     scheduler.shutdown(wait=False)
 

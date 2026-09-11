@@ -16,7 +16,7 @@ import requests as req
 import logging
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from captcha_solver import get_solved_captcha, report_bad_captcha
+from captcha_solver import get_solved_captcha, report_bad_captcha, is_rate_limited
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(message)s")
 log = logging.getLogger("pipeline")
@@ -82,6 +82,7 @@ def scrape(crop, commodity_id, from_date, to_date):
     }
     all_rows, page = [], 1
     captcha_retries = 0
+    throttled = 0
     while page <= 100:
         body["page"] = str(page)
         try:
@@ -96,6 +97,16 @@ def scrape(crop, commodity_id, from_date, to_date):
         except Exception as e:
             log.error(f"  Page {page} error: {e}"); break
         if js.get("code") in ("TOKEN_OR_CAPTCHA_REQUIRED", "INVALID_CAPTCHA"):
+            # Rate limit ka code bhi yahi hai, par captcha sahi hota hai —
+            # bad report mat karo, sirf backoff.
+            if is_rate_limited(js):
+                throttled += 1
+                if throttled > 10:
+                    log.error("  Rate limited 10 baar, giving up"); break
+                wait = min(60, 5 * 2 ** (throttled - 1))
+                log.warning(f"  Rate limited, {wait}s backoff ({throttled}/10)...")
+                time.sleep(wait)
+                continue
             captcha_retries += 1
             report_bad_captcha(captcha_id)
             if captcha_retries > 5:
@@ -316,11 +327,59 @@ def run_crop(crop, commodity_id, from_date, to_date):
     insert_and_train(df, crop)
 
 
+def run_up_mandis(to_date):
+    """
+    UP (Prayagraj APMC) — Delhi wale flow jaisa hi: scrape → DB insert → train.
+
+    Delhi ka data weather columns ke saath aata hai (add_weather/build_clean_csv),
+    UP ke liye woh pipeline nahi hai — isliye seedha scrape karke DB mein daalte
+    hain. Training dono ke liye ek hi global reversion model hai, jo neeche
+    train_reversion() se poori DB pe retrain hota hai.
+    """
+    from daily_scrape import (
+        UP_CROPS, UP_MARKETS, scrape_up_range, insert_to_db,
+        get_up_last_scraped_date,
+    )
+
+    log.info(f"\n{'='*50}\n  UP Mandis ({', '.join(sorted(set(UP_MARKETS.values())))})\n{'='*50}")
+    total = 0
+    for crop, cid in UP_CROPS.items():
+        last_date = get_up_last_scraped_date(crop)
+        from_date = (dt.date.fromisoformat(last_date) + dt.timedelta(days=1)).isoformat()
+        if from_date > to_date:
+            log.info(f"[UP][{crop}] Already up to date (last={last_date})")
+            continue
+        df = scrape_up_range(crop, cid, from_date, to_date)
+        if df.empty:
+            log.info(f"[UP][{crop}] koi naya data nahi")
+            continue
+        df["commodity"] = crop
+        total += insert_to_db(df, crop, state="Uttar Pradesh", district="Prayagraj")
+        time.sleep(1)
+
+    log.info(f"[UP] {total} records inserted/updated")
+    return total
+
+
+def retrain_global_model():
+    """Poori DB (Delhi + UP) pe reversion model retrain karo."""
+    from database import MandiDB
+    from model_trainer import MandiModelTrainer
+
+    log.info(f"\n{'='*50}\n  Global reversion model retrain\n{'='*50}")
+    if MandiModelTrainer().train_reversion(MandiDB()):
+        log.info("  Model saved")
+    else:
+        log.error("  Training returned None — DB data check karo")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--crop", default="all")
     ap.add_argument("--from", dest="from_date", default=None)
     ap.add_argument("--to", dest="to_date", default=dt.date.today().isoformat())
+    ap.add_argument("--skip-up", action="store_true", help="UP mandis skip karo")
+    ap.add_argument("--skip-delhi", action="store_true", help="Delhi mandis skip karo")
     args = ap.parse_args()
 
     print("╔════════════════════════════════════╗")
@@ -328,9 +387,16 @@ def main():
     print("║  Scrape → Weather → CSV → Train    ║")
     print("╚════════════════════════════════════╝")
 
-    crops = CROPS if args.crop.lower() == "all" else {args.crop.capitalize(): CROPS[args.crop.capitalize()]}
-    for crop, cid in crops.items():
-        run_crop(crop, cid, args.from_date, args.to_date)
+    if not args.skip_delhi:
+        crops = CROPS if args.crop.lower() == "all" else {args.crop.capitalize(): CROPS[args.crop.capitalize()]}
+        for crop, cid in crops.items():
+            run_crop(crop, cid, args.from_date, args.to_date)
+
+    if not args.skip_up:
+        run_up_mandis(args.to_date)
+
+    # Reversion model global hai — Delhi aur UP dono ka data isi mein jata hai.
+    retrain_global_model()
     print("\n✓ DONE")
 
 

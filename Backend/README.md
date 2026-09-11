@@ -129,3 +129,90 @@ mandiq-backend/
 ├── models/           # Saved model files (.pkl)
 └── uploads/          # Temporary PDF storage
 ```
+
+---
+
+## Mandi & Crop Coverage
+
+| State | Mandi | Crops |
+|-------|-------|-------|
+| Delhi | Azadpur APMC, Keshopur APMC | Tomato, Potato, Onion, Spinach |
+| Uttar Pradesh | Prayagraj APMC | Tomato, Potato, Onion |
+
+Ye list do jagah define hai aur dono match karni chahiye:
+
+- Backend — `daily_scrape.py` ka `CROPS`/`DELHI_MARKETS` aur `UP_CROPS`/`UP_MARKETS`
+- Frontend — `frontend/src/app/config/mandis.ts`
+
+**UP mein sirf 3 crops kyun?** AGMARKNET pe Prayagraj district ki mandis sirf
+Tomato/Potato/Onion report karti hain. Bhindi, Tori, Boda waghairah ke commodity IDs
+sahi hain, par un fasalon ka data Prayagraj ke liye hota hi nahi.
+
+**Prayagraj ke alawa doosri mandi kyun nahi?** Us district ki baaki mandis (Sirsa,
+Ajuha, Jasra, Lediyari) 38 din mein sirf 1-14 din report karti hain — model ke liye
+itna data kaafi nahi. Prayagraj APMC 38/38 din report karti hai.
+
+## AGMARKNET Scraping
+
+Data source: `POST https://api.agmarknet.gov.in/v1/daily-price-arrival/report`
+(captcha lagta hai — `captcha_solver.py` dekho).
+
+### Commodity / mandi IDs kaise nikalein
+
+Saare dropdown IDs ek public endpoint se milte hain — koi captcha nahi:
+
+```bash
+python agmarknet_ids.py tomato                     # commodity dhundo
+python agmarknet_ids.py --state uttar              # state ID
+python agmarknet_ids.py --market prayagraj --state 34
+python agmarknet_ids.py --dump                     # cache refresh
+```
+
+### Roz ka scrape
+
+```bash
+python daily_scrape.py      # Delhi + UP, jahan se chhoota tha wahan se
+```
+
+Server start pe apne aap chalta hai (`main.py` ka scheduler, roz 6 AM).
+
+### Poora pipeline (scrape + weather + train)
+
+```bash
+python run_pipeline.py --crop all       # Delhi + UP + model retrain
+python run_pipeline.py --skip-delhi     # sirf UP
+python run_pipeline.py --skip-up        # sirf Delhi
+```
+
+Har Sunday 2 AM apne aap chalta hai.
+
+### Nayi mandi ka initial data (backfill)
+
+```bash
+python backfill_up_data.py              # pichhle ~1 saal (price + arrival)
+python backfill_up_data.py --history    # 2021 se (sirf price)
+```
+
+`--history` zaroori hai kyunki model ko har crop x mandi ke **200+ rows** chahiye
+(`mandiq_reversion.py`), aur "Both" (price+arrival) mode AGMARKNET sirf ~1 saal deta
+hai. Price-only mode 2021 tak jata hai, bas usme arrival quantity nahi aati.
+
+### ⚠️ seed_up_data.py
+
+Ye script **nakli (synthetic)** random-walk bhaav banati hai. Pehle ye `main.py` se
+apne aap chalti thi, jisse users aur model dono ko fake data milta tha. Ab guard laga
+hai — bina `--force` ke nahi chalegi. **Asli data ke liye `backfill_up_data.py`
+use karo.**
+
+## Model Training
+
+Reversion model global hai — ek hi file (`models/mandiq_reversion.json`) mein saare
+crop x mandi pairs ke params hote hain, top-level keys ke roop mein (koi `params`
+wrapper nahi).
+
+```bash
+python train_up_mandis.py   # poori DB (Delhi + UP) pe retrain
+```
+
+Jis pair ke paas 200+ usable rows nahi hote, woh model mein aata hi nahi — aur uske
+liye prediction fallback (FLAT/WATCH) par chali jati hai.

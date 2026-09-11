@@ -34,7 +34,7 @@ import datetime as dt
 import requests
 import pandas as pd
 
-from captcha_solver import get_solved_captcha, report_bad_captcha
+from captcha_solver import get_solved_captcha, report_bad_captcha, is_rate_limited
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────── #
 
@@ -133,6 +133,7 @@ def fetch_crop(crop_name, commodity_id, from_date, to_date):
     page = 1
     max_pages = 100
     captcha_retries = 0
+    throttled = 0
     max_captcha_retries = 3
 
     print(f"  [{crop_name}] Fetching {from_date} → {to_date} ...", end=" ")
@@ -158,6 +159,16 @@ def fetch_crop(crop_name, commodity_id, from_date, to_date):
 
         # Wrong captcha solve — retry with a fresh one instead of aborting
         if js.get("code") in ("TOKEN_OR_CAPTCHA_REQUIRED", "INVALID_CAPTCHA"):
+            # Rate limit ka code bhi yahi hai — captcha sahi tha, bad mat report karo
+            if is_rate_limited(js):
+                throttled += 1
+                if throttled > 10:
+                    print("\n  ERROR: rate limited 10 baar, giving up")
+                    break
+                wait = min(60, 5 * 2 ** (throttled - 1))
+                print(f"\n  [rate-limit] {wait}s backoff ({throttled}/10)...", end=" ")
+                time.sleep(wait)
+                continue
             captcha_retries += 1
             report_bad_captcha(captcha_id)
             if captcha_retries <= max_captcha_retries:

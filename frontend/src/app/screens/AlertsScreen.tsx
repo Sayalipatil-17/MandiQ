@@ -6,6 +6,7 @@ import { SupportChat } from '../components/SupportChat';
 import { useT, cropName } from '../../i18n';
 import { showLocalNotification, checkAndNotifyTriggeredAlerts } from '../../onesignal';
 import { CropIcon } from '../components/CropIcons';
+import { cropsForState, defaultMarketForState, getSelectedState } from '../config/mandis';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -19,6 +20,8 @@ function authHeaders() {
 export function AlertsScreen() {
   const nav = useNavigate();
   const { t } = useT();
+  const state = getSelectedState();
+  const selectedMarket = defaultMarketForState(state);
   const crop = localStorage.getItem('selectedCrop') || 'Tomato';
 
   const [tp, setTp] = useState('');
@@ -44,7 +47,7 @@ export function AlertsScreen() {
   // Jab bhi crop badle, uska current price fetch karo
   useEffect(() => {
     setCurrentPrice(0); setPriceRange(null);
-    fetch(`${BASE_URL}/api/history?commodity=${encodeURIComponent(selectedCrop)}&market=Azadpur%20APMC`, { headers: authHeaders() })
+    fetch(`${BASE_URL}/api/history?commodity=${encodeURIComponent(selectedCrop)}&market=${encodeURIComponent(selectedMarket)}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : { data: [] })
       .then((res: any) => {
         const arr = Array.isArray(res) ? res : (res?.data ?? []);
@@ -132,7 +135,7 @@ export function AlertsScreen() {
       const r = await fetch(`${BASE_URL}/api/alerts`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ crop: selectedCrop, market: 'Azadpur APMC', target_price: p, direction }),
+        body: JSON.stringify({ crop: selectedCrop, market: selectedMarket, target_price: p, direction }),
       });
       if (r.ok) {
         setTp('');
@@ -154,12 +157,7 @@ export function AlertsScreen() {
     } catch {}
   }
 
-  const CROPS = [
-    { name: 'Tomato', emoji: '🍅' },
-    { name: 'Potato', emoji: '🥔' },
-    { name: 'Onion', emoji: '🧅' },
-    { name: 'Spinach', emoji: '🌿' },
-  ];
+  const CROPS = cropsForState(state);
 
   return (
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
@@ -206,7 +204,7 @@ export function AlertsScreen() {
 
           {/* Crop */}
           <p className="text-xs text-gray-400 mb-2">{t('alerts.selectCrop')}</p>
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className={`grid gap-2 mb-4 ${CROPS.length <= 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
             {CROPS.map(c => (
               <button key={c.name} onClick={() => setSelectedCrop(c.name)}
                 className={`flex flex-col items-center py-2.5 px-1 rounded-2xl border-2 transition-all ${selectedCrop === c.name ? 'bg-[#2d6a3e] border-[#2d6a3e]' : 'bg-gray-50 border-gray-100'}`}>

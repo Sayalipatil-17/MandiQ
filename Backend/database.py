@@ -25,7 +25,10 @@ except ImportError:
 
 load_dotenv()
 log = logging.getLogger("mandiq.db")
-DB_PATH = "data/mandiq.db"
+# Backend/ ke relative, current working directory ke nahi. Pehle "data/mandiq.db"
+# tha, to project root se koi script chalao to sqlite "unable to open database file"
+# deta tha (ya chupchaap khaali DB bana deta tha).
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "mandiq.db")
 
 
 def _now_str() -> str:

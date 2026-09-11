@@ -11,6 +11,7 @@ import { CropIcon } from '../components/CropIcons';
 const ML: Record<string, string> = {
   'Azadpur APMC': 'mandi.azadpur',
   'Keshopur APMC': 'mandi.keshopur',
+  'Prayagraj APMC': 'mandi.prayagraj',
 };
 
 function wd(d: string, lang: string) { return new Date(d).toLocaleDateString(lang === 'pa' ? 'pa-IN' : lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN', { weekday: 'short' }); }

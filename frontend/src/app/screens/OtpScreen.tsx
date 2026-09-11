@@ -112,6 +112,14 @@ export function OtpScreen() {
       </div>
 
 
+      {/* Dev mode mein testing OTP dikhao */}
+      {currentTestingOtp && (
+        <div className="mb-4 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
+          <span className="text-xs text-amber-700 font-medium">Dev OTP:</span>
+          <span className="text-sm font-bold text-amber-900 tracking-widest">{currentTestingOtp}</span>
+        </div>
+      )}
+
       {/* 6 Large inputs grid */}
       <div className="grid grid-cols-6 gap-2 mb-6">
         {otp.map((val, idx) => (

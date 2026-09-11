@@ -11,3 +11,12 @@ frontend/android/app/google-services.json
 dist/
 build/
 *.db
+# DB / model backups (local safety copies — repo mein nahi jaane chahiye)
+*.db.bak-*
+*.json.bak-*
+
+# AGMARKNET dropdown ID cache — `python agmarknet_ids.py --dump` se dobara ban jata hai
+Backend/data/agmarknet_filters.json
+
+# AGMARKNET se download kiye gaye CSV dumps
+Backend/All_Type_of_Report_*.csv
