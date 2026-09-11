@@ -180,6 +180,8 @@ class MandiSQLiteDB:
 
     def get_otp(self, mobile_number: str) -> Optional[dict]:
         with self._conn() as con:
+            # Expired OTPs bhi delete karo simultaneously
+            con.execute("DELETE FROM otps WHERE mobile_number = ? AND expires_at < datetime('now')", (mobile_number,))
             row = con.execute("SELECT * FROM otps WHERE mobile_number = ?", (mobile_number,)).fetchone()
         return dict(row) if row else None
 
