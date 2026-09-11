@@ -370,7 +370,42 @@ function normalizeQuery(query: string): string {
   return q;
 }
 
-function findAnswer(query: string, lang: Lang): { answer: string; found: boolean; matchedIndex: number } {
+// Levenshtein distance for typo tolerance on short words
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (m === 0) return n; if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function fuzzyMatch(token: string, keyword: string): boolean {
+  if (token.includes(keyword) || keyword.includes(token)) return true;
+  // allow 1 edit for words ≥5 chars, 2 edits for ≥8 chars
+  if (token.length >= 5 && keyword.length >= 5) {
+    const maxDist = Math.max(token.length, keyword.length) >= 8 ? 2 : 1;
+    return levenshtein(token, keyword) <= maxDist;
+  }
+  return false;
+}
+
+// Understanding echo — shown before answer to confirm intent was understood
+const UNDERSTOOD: Record<Lang, (topic: string) => string> = {
+  en:  t => `Got it — you're asking about **${t}**.\n\n`,
+  hi:  t => `समझ गया — आप **${t}** के बारे में पूछ रहे हो।\n\n`,
+  pa:  t => `ਸਮਝ ਗਿਆ — ਤੁਸੀਂ **${t}** ਬਾਰੇ ਪੁੱਛ ਰਹੇ ਹੋ।\n\n`,
+  mr:  t => `समजलो — तुम्ही **${t}** बद्दल विचारत आहात.\n\n`,
+};
+const MAYBE_UNDERSTOOD: Record<Lang, (topic: string) => string> = {
+  en:  t => `I think you're asking about **${t}** — let me help!\n\n`,
+  hi:  t => `लगता है आप **${t}** के बारे में पूछ रहे हो — यह देखो:\n\n`,
+  pa:  t => `ਲੱਗਦਾ ਹੈ ਤੁਸੀਂ **${t}** ਬਾਰੇ ਪੁੱਛ ਰਹੇ ਹੋ:\n\n`,
+  mr:  t => `वाटतं तुम्ही **${t}** बद्दल विचारत आहात:\n\n`,
+};
+
+function findAnswer(query: string, lang: Lang): { answer: string; found: boolean; matchedIndex: number; score: number } {
   const normalized = normalizeQuery(query);
   const tokens = normalized.split(/\s+/).filter(w => w.length > 1 && !STOPWORDS.has(w));
   let bestMatch = -1;
@@ -379,29 +414,45 @@ function findAnswer(query: string, lang: Lang): { answer: string; found: boolean
     let score = 0;
     for (const phrase of QA[i].phrases) {
       const phraseL = phrase.toLowerCase();
-      // Exact phrase: score ×2 length
       if (normalized.includes(phraseL)) {
         score += phraseL.length * 2;
         continue;
       }
-      // Partial phrase: 70%+ meaningful words match → partial credit
       const phraseWords = phraseL.split(/\s+/).filter(w => !STOPWORDS.has(w) && w.length > 1);
       if (phraseWords.length >= 2) {
-        const matched = phraseWords.filter(pw => tokens.some(t => t.includes(pw) || pw.includes(t))).length;
+        const matched = phraseWords.filter(pw => tokens.some(t => fuzzyMatch(t, pw))).length;
         if (matched / phraseWords.length >= 0.7) score += Math.floor(phraseL.length * 1.2);
       }
     }
-    // Keyword match on stopword-filtered tokens
     for (const kw of QA[i].keywords) {
       const kwL = kw.toLowerCase();
-      if (tokens.some(t => t.includes(kwL) || kwL.includes(t))) score += kw.length;
+      if (tokens.some(t => fuzzyMatch(t, kwL))) score += kw.length;
     }
     if (score > bestScore) { bestScore = score; bestMatch = i; }
   }
   if (bestScore >= 4 && bestMatch >= 0) {
-    return { answer: QA[bestMatch].answer[lang] || QA[bestMatch].answer.en, found: true, matchedIndex: bestMatch };
+    const topic = QA[bestMatch].question[lang] || QA[bestMatch].question.en;
+    const rawAnswer = QA[bestMatch].answer[lang] || QA[bestMatch].answer.en;
+    // Inject selected crop/mandi context into relevant answers
+    const crop = localStorage.getItem('selectedCrop') || '';
+    const mandi = (localStorage.getItem('selectedMarket') || '').replace(' APMC', '');
+    let contextHint = '';
+    if (crop && mandi && [5,6,7,8,9].includes(bestMatch)) {
+      const ctxMap: Record<Lang, string> = {
+        en: `_(You currently have **${crop}** @ **${mandi}** selected.)_\n\n`,
+        hi: `_(आपने अभी **${crop}** @ **${mandi}** चुना हुआ है।)_\n\n`,
+        pa: `_(ਤੁਸੀਂ ਹੁਣ **${crop}** @ **${mandi}** ਚੁਣਿਆ ਹੋਇਆ ਹੈ।)_\n\n`,
+        mr: `_(तुम्ही सध्या **${crop}** @ **${mandi}** निवडले आहे.)_\n\n`,
+      };
+      contextHint = ctxMap[lang] || ctxMap.en;
+    }
+    // High confidence: score ≥ 20 → "Samjha", lower → "Lagta hai"
+    const prefix = bestScore >= 20
+      ? UNDERSTOOD[lang](topic)
+      : MAYBE_UNDERSTOOD[lang](topic);
+    return { answer: prefix + contextHint + rawAnswer, found: true, matchedIndex: bestMatch, score: bestScore };
   }
-  return { answer: '', found: false, matchedIndex: -1 };
+  return { answer: '', found: false, matchedIndex: -1, score: 0 };
 }
 
 function getRelatedSuggestions(matchedIndex: number, lang: Lang): Suggestion[] {
