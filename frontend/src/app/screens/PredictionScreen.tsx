@@ -146,10 +146,10 @@ export function PredictionScreen() {
           <div className="bg-gradient-to-br from-[#1e5631] to-[#2d6a3e] rounded-2xl p-5 text-white flex items-center justify-between">
             <div>
               <p className="text-white/70 text-xs mb-1">{t('pred.currentPrice')}</p>
-              <p className="text-3xl font-bold">₹{tp.toLocaleString()}</p>
+              <p className="text-3xl font-bold">{tp > 0 ? `₹${tp.toLocaleString()}` : '--'}</p>
               <p className="text-white/60 text-xs mt-1">{t('common.perQuintal')}</p>
             </div>
-            {bp > tp && (
+            {bd && bp > 0 && (
               <div className="text-right">
                 <p className="text-white/70 text-xs mb-1">{t('pred.bestForecast')}</p>
                 <p className="text-2xl font-bold text-[#4ade80]">₹{bp.toLocaleString()}</p>
