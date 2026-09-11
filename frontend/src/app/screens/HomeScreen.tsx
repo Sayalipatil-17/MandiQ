@@ -380,7 +380,7 @@ export function HomeScreen() {
             };
           });
           setHistory([]); setPredictions(syntheticPreds);
-          setShowResult(true); setSearchTime(new Date()); setShowingCached(true);
+          setShowResult(true); setSearchTime(new Date()); setShowingCached(false);
           saveCachedPrice(selectedCrop, selectedMarket, [], syntheticPreds);
           return;
         }
@@ -414,7 +414,7 @@ export function HomeScreen() {
 
       if (hist.length > 0 || finalPreds.length > 0) {
         setHistory(hist); setPredictions(finalPreds); setShowResult(true); setSearchTime(new Date());
-        setShowingCached(preds.length === 0 && finalPreds.length > 0); // synthetic preds = cached indicator
+        setShowingCached(false); // fresh API response mila — offline banner mat dikhaao
         saveCachedPrice(selectedCrop, selectedMarket, hist, finalPreds);
       } else if (!cached) {
         // No real data — show error only if no benchmark fallback available
