@@ -5,22 +5,17 @@ import { BottomNav } from '../components/BottomNav';
 import { mandiApi } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
 import { CropIcon } from '../components/CropIcons';
+import { cropsForState, marketsForState, getSelectedState } from '../config/mandis';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceLine
 } from 'recharts';
 
-const CROPS = [
-  { name: 'Tomato' },
-  { name: 'Potato' },
-  { name: 'Onion' },
-  { name: 'Spinach' },
-];
-
-const MARKETS = [
-  { value: 'Azadpur APMC', shortKey: 'mandi.azadpur.short' },
-  { value: 'Keshopur APMC', shortKey: 'mandi.keshopur.short' },
-];
+const MANDI_SHORT: Record<string, string> = {
+  'Azadpur APMC':   'mandi.azadpur.short',
+  'Keshopur APMC':  'mandi.keshopur.short',
+  'Prayagraj APMC': 'mandi.prayagraj.short',
+};
 
 const PERIODS = [
   { key: 'trend.period30', days: 30 },
@@ -30,8 +25,11 @@ const PERIODS = [
 export function PastTrendScreen() {
   const nav = useNavigate();
   const { t, lang } = useT();
-  const [crop, setCrop] = useState(localStorage.getItem('selectedCrop') || 'Tomato');
-  const [market, setMarket] = useState(localStorage.getItem('selectedMarket') || 'Azadpur APMC');
+  const state = getSelectedState();
+  const CROPS = cropsForState(state);
+  const MARKETS = marketsForState(state).map(m => ({ value: m.value, shortKey: MANDI_SHORT[m.value] || m.value }));
+  const [crop, setCrop] = useState(localStorage.getItem('selectedCrop') || CROPS[0].name);
+  const [market, setMarket] = useState(localStorage.getItem('selectedMarket') || MARKETS[0].value);
   const [period, setPeriod] = useState(30);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
