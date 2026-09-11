@@ -169,6 +169,36 @@ const QA: QAEntry[] = [
     question: { en: 'What is in the Profile screen?', hi: 'Profile स्क्रीन में क्या है?', pa: 'Profile ਸਕਰੀਨ ਵਿੱਚ ਕੀ ਹੈ?', mr: 'Profile स्क्रीनमध्ये काय आहे?' },
     answer: { en: 'Profile screen (person icon, bottom nav) shows your account info, lets you change language, and has a Logout button. Your name and mobile number registered at signup are shown here.', hi: 'Profile स्क्रीन (नीचे person आइकन) में आपकी account जानकारी, भाषा बदलने का option और Logout बटन है। यहाँ आपका नाम और mobile number दिखता है।', pa: 'Profile ਸਕਰੀਨ ਵਿੱਚ account ਜਾਣਕਾਰੀ, ਭਾਸ਼ਾ ਬਦਲਣ ਦਾ option ਅਤੇ Logout ਬਟਨ ਹੈ।', mr: 'Profile स्क्रीनमध्ये account माहिती, भाषा बदलण्याचा पर्याय आणि Logout बटण आहे.' },
   },
+  {
+    phrases: ['register kaise karein', 'account kaise banaen', 'login kaise karein', 'signup kaise karein', 'otp kya hota hai', 'naya account banana hai', 'phone number se login', 'mobile se kaise login karein', 'pehli baar use kar raha hoon', 'new user hoon'],
+    keywords: ['register', 'signup', 'login', 'otp', 'mobile', 'phone', 'naya', 'new', 'account banana', 'ਰਜਿਸਟਰ', 'नोंदणी', 'लॉगिन'],
+    question: { en: 'How to register / login?', hi: 'Account कैसे बनाएं?', pa: 'ਰਜਿਸਟਰ ਕਿਵੇਂ ਕਰੀਏ?', mr: 'नोंदणी कशी करावी?' },
+    answer: { en: 'Open MandiQ → enter your mobile number → you\'ll get a 6-digit OTP on SMS → enter the OTP → account is created. No password needed — your mobile number is your login.', hi: 'MandiQ खोलें → अपना mobile number डालें → SMS पर 6-digit OTP आएगा → OTP डालें → account बन जाएगा। कोई password नहीं — mobile number ही आपका login है।', pa: 'MandiQ ਖੋਲੋ → ਆਪਣਾ mobile ਨੰਬਰ ਦਾਖਲ ਕਰੋ → SMS ਤੇ 6-digit OTP ਆਵੇਗਾ → OTP ਦਾਖਲ ਕਰੋ।', mr: 'MandiQ उघडा → mobile नंबर टाका → SMS वर 6-digit OTP येईल → OTP टाका → account तयार.' },
+  },
+  {
+    phrases: ['ye data aaj ka hai', 'data kitna fresh hai', 'price update kab hota hai', 'last update kab tha', 'aaj ka data hai kya', 'kitne baje update hota hai', 'data purana to nahi', 'live data hai kya', 'real time data hai', 'data kab tak update hota hai'],
+    keywords: ['fresh', 'update', 'aaj', 'today', 'latest', 'recent', 'realtime', 'live', 'purana', 'old', 'कब', 'ताज़ा', 'ਤਾਜ਼ਾ', 'ਅੱਪਡੇਟ'],
+    question: { en: 'How fresh is the data?', hi: 'Data कितना ताज़ा है?', pa: 'ਡੇਟਾ ਕਿੰਨਾ ਤਾਜ਼ਾ ਹੈ?', mr: 'डेटा किती ताजा आहे?' },
+    answer: { en: 'MandiQ scrapes AGMARKNET every morning, so prices are updated daily. A 📡 icon means today\'s live price. If the icon shows ~अनुमानित, today\'s official data hasn\'t arrived yet and the AI is estimating.', hi: 'MandiQ हर रोज़ सुबह AGMARKNET से data लेता है — कीमतें रोज़ अपडेट होती हैं। 📡 का मतलब आज का live price। ~अनुमानित दिखे तो आज का official data अभी नहीं आया — AI अनुमान लगा रहा है।', pa: 'MandiQ ਹਰ ਰੋਜ਼ ਸਵੇਰੇ AGMARKNET ਤੋਂ ਡੇਟਾ ਲੈਂਦਾ ਹੈ। 📡 = ਅੱਜ ਦਾ live ਭਾਅ। ~ਅਨੁਮਾਨਿਤ = ਅੱਜ ਦਾ ਡੇਟਾ ਅਜੇ ਨਹੀਂ ਆਇਆ।', mr: 'MandiQ दररोज सकाळी AGMARKNET कडून डेटा घेते. 📡 = आजचा live भाव. ~अंदाजित = आजचा अधिकृत डेटा अद्याप आला नाही.' },
+  },
+  {
+    phrases: ['internet nahi hai to chalega', 'offline kaam karta hai kya', 'bina internet ke chalega', 'data saver mode mein chalega', 'net nahi hai', 'wifi nahi hai', 'offline mode hai kya'],
+    keywords: ['offline', 'internet', 'wifi', 'data', 'network', 'connection', 'bina', 'without', 'ਆਫਲਾਈਨ', 'ऑफलाइन'],
+    question: { en: 'Does it work offline?', hi: 'बिना इंटरनेट चलेगा?', pa: 'ਬਿਨਾਂ ਇੰਟਰਨੈੱਟ ਚੱਲੇਗਾ?', mr: 'इंटरनेटशिवाय चालेल का?' },
+    answer: { en: 'MandiQ needs internet to load live prices and predictions from AGMARKNET. Without internet, previously loaded prices may still show, but new data won\'t refresh. A stable mobile data or Wi-Fi connection gives the best experience.', hi: 'MandiQ को AGMARKNET से live price और prediction लाने के लिए internet चाहिए। बिना internet के पहले load हुई कीमतें दिख सकती हैं, लेकिन नया data नहीं आएगा।', pa: 'MandiQ ਨੂੰ live ਭਾਅ ਲਿਆਉਣ ਲਈ internet ਚਾਹੀਦਾ ਹੈ। ਬਿਨਾਂ internet ਦੇ ਪਹਿਲਾਂ ਲੋਡ ਹੋਏ ਭਾਅ ਦਿਖ ਸਕਦੇ ਹਨ।', mr: 'MandiQ ला live किंमत आणण्यासाठी internet लागते. इंटरनेटशिवाय आधी लोड झालेल्या किंमती दिसू शकतात.' },
+  },
+  {
+    phrases: ['home screen pe kya hai', 'home page mein kya dikhata hai', 'pehla screen kya hai', 'app kholne ke baad kya', 'main screen kya hai', 'home screen kya dikhata hai', 'app mein kitne screens hain', 'kaunse features hain', 'app ki saari features', 'poora app kya kya karta hai'],
+    keywords: ['home', 'screen', 'page', 'feature', 'features', 'screens', 'navigation', 'bottom', 'nav', 'होम', 'ਹੋਮ', 'फीचर'],
+    question: { en: 'What screens does the app have?', hi: 'App में कौन-कौन सी screens हैं?', pa: 'App ਵਿੱਚ ਕਿਹੜੀਆਂ screens ਹਨ?', mr: 'App मध्ये कोणते screens आहेत?' },
+    answer: { en: 'MandiQ has 5 screens:\n🏠 Home — live price + 7-day chart + mandi comparison\n📈 Prediction — 7-day AI forecast with best day highlighted\n🔔 Alerts — set price alerts, get push notifications\n📉 Past Trend — historical price charts\n🏪 Mandi Info — location & contact of each mandi\nProfile (person icon) — language, account, logout', hi: 'MandiQ में 5 screens हैं:\n🏠 Home — live कीमत + 7 दिन चार्ट + मंडी तुलना\n📈 Prediction — 7 दिन AI forecast, best day highlight\n🔔 Alerts — price alert, push notification\n📉 Past Trend — पुराना price chart\n🏪 Mandi Info — मंडी का पता और contact\nProfile (person icon) — भाषा, account, logout', pa: 'MandiQ ਵਿੱਚ 5 screens ਹਨ:\n🏠 Home · 📈 Prediction · 🔔 Alerts · 📉 Past Trend · 🏪 Mandi Info\nProfile (person icon) — ਭਾਸ਼ਾ, ਅਕਾਊਂਟ, ਲੌਗਆਊਟ', mr: 'MandiQ मध्ये 5 screens:\n🏠 Home · 📈 Prediction · 🔔 Alerts · 📉 Past Trend · 🏪 Mandi Info\nProfile — भाषा, खाते, logout' },
+  },
+  {
+    phrases: ['is mahine mein kaun si fasal bechein', 'abhi kaun si fasal acchi hai', 'seasonal fasal kaunsi hai', 'is season mein kya beche', 'hansi kaun si sabzi acchi hai', 'garmi mein kaun si fasal', 'barish mein kaun si fasal', 'sardi mein kaun si fasal', 'season ke hisab se', 'mausam ke hisab se kya bechein'],
+    keywords: ['season', 'seasonal', 'mausam', 'मौसम', 'garmi', 'barish', 'sardi', 'mahine', 'month', 'ਮੌਸਮ', 'हंगाम', 'abhi', 'currently'],
+    question: { en: 'Which crop to sell this season?', hi: 'इस सीज़न में कौन सी फसल बेचें?', pa: 'ਇਸ ਮੌਸਮ ਵਿੱਚ ਕਿਹੜੀ ਫਸਲ ਵੇਚੀਏ?', mr: 'या हंगामात कोणते पीक विकावे?' },
+    answer: { en: 'MandiQ\'s 7-day prediction is the best guide for what\'s fetching good prices right now. Check the Home screen for your crop → look at the Mandi Comparison chart to see where you\'ll get the best deal. Prices vary by season, festival demand, and supply — the app shows real current data.', hi: 'MandiQ का 7 दिन का prediction सबसे अच्छा guide है — यह बताता है कि अभी कौन सी फसल अच्छी कीमत पर है। Home स्क्रीन पर अपनी फसल check करें → मंडी तुलना चार्ट देखें। कीमतें मौसम, त्योहार और supply के हिसाब से बदलती हैं — app में real-time data है।', pa: 'MandiQ ਦੀ 7-ਦਿਨ prediction ਸਭ ਤੋਂ ਵਧੀਆ guide ਹੈ। Home ਸਕਰੀਨ ਤੇ ਆਪਣੀ ਫਸਲ ਚੈੱਕ ਕਰੋ, ਮੰਡੀ ਤੁਲਨਾ ਦੇਖੋ।', mr: 'MandiQ ची 7-दिवस prediction सर्वोत्तम मार्गदर्शक आहे. Home स्क्रीनवर तुमचे पीक तपासा आणि मंडी तुलना चार्ट पाहा.' },
+  },
 ];
 
 
@@ -311,25 +341,63 @@ function toTTSText(text: string, lang: Lang): string {
 
 // ─── NLP matching ───────────────────────────────────────────────────────────────
 
+const STOPWORDS = new Set([
+  'bhai','yaar','please','plz','thoda','zara','jara','kya','hai','hain','ho','hoga',
+  'the','a','an','is','are','was','mujhe','muje','hame','hamein','aap','tum',
+  'ka','ki','ke','ko','se','me','mein','par','pe','ne','ya','aur','or',
+  'yeh','ye','vo','voh','woh','iss','us','ek','do','yahan','wahan','ab','bahut',
+  'ਕੀ','ਹੈ','ਨੂੰ','ਦਾ','ਦੀ','ਦੇ','ਵਿੱਚ','ਤੇ',
+  'काय','आहे','मला','आपण','ते',
+  'क्या','है','हैं','को','से','का','की','के','में','पर','और','या',
+]);
+
+const VERB_ROOTS: [RegExp, string][] = [
+  [/bechna|beche|bechega|bechunga|bechni|bechte|bech\b/g, 'sell bech'],
+  [/kharidna|kharida|kharidega|kharid\b/g, 'buy kharid'],
+  [/dekhna|dekhe|dekhega|dekh\b/g, 'dekh check'],
+  [/chahiye|chahte|chahu|chah\b/g, 'want chahiye'],
+  [/pata karna|pata karo|pata kaise|batao|bataiye/g, 'batao find'],
+  [/set karna|set karo|lagao|laga\b/g, 'set laga'],
+  [/samajhna|samjhao|samjhaiye/g, 'samjhao explain'],
+  [/compare karna|tulna/g, 'compare tulna'],
+];
+
+function normalizeQuery(query: string): string {
+  let q = query.toLowerCase().replace(/[।?!,:;।]/g, ' ');
+  for (const [pattern, replacement] of VERB_ROOTS) {
+    q = q.replace(pattern, replacement);
+  }
+  return q;
+}
+
 function findAnswer(query: string, lang: Lang): { answer: string; found: boolean; matchedIndex: number } {
-  const lower = query.toLowerCase().replace(/[।?!,:;।]/g, ' ');
-  const tokens = lower.split(/\s+/).filter(w => w.length > 1);
+  const normalized = normalizeQuery(query);
+  const tokens = normalized.split(/\s+/).filter(w => w.length > 1 && !STOPWORDS.has(w));
   let bestMatch = -1;
   let bestScore = 0;
   for (let i = 0; i < QA.length; i++) {
     let score = 0;
-    // Phrase match: multi-word phrases score ×2 their length (catches "kab bechna chahiye" etc.)
     for (const phrase of QA[i].phrases) {
-      if (lower.includes(phrase.toLowerCase())) score += phrase.length * 2;
+      const phraseL = phrase.toLowerCase();
+      // Exact phrase: score ×2 length
+      if (normalized.includes(phraseL)) {
+        score += phraseL.length * 2;
+        continue;
+      }
+      // Partial phrase: 70%+ meaningful words match → partial credit
+      const phraseWords = phraseL.split(/\s+/).filter(w => !STOPWORDS.has(w) && w.length > 1);
+      if (phraseWords.length >= 2) {
+        const matched = phraseWords.filter(pw => tokens.some(t => t.includes(pw) || pw.includes(t))).length;
+        if (matched / phraseWords.length >= 0.7) score += Math.floor(phraseL.length * 1.2);
+      }
     }
-    // Keyword match: token-level overlap
+    // Keyword match on stopword-filtered tokens
     for (const kw of QA[i].keywords) {
       const kwL = kw.toLowerCase();
       if (tokens.some(t => t.includes(kwL) || kwL.includes(t))) score += kw.length;
     }
     if (score > bestScore) { bestScore = score; bestMatch = i; }
   }
-  // Require minimum confidence: at least a 4-char match to avoid random short-word hits
   if (bestScore >= 4 && bestMatch >= 0) {
     return { answer: QA[bestMatch].answer[lang] || QA[bestMatch].answer.en, found: true, matchedIndex: bestMatch };
   }
