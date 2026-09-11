@@ -420,13 +420,34 @@ export function SupportChat() {
       deliverBotMessage({ from: 'bot', text: resp, priceCard, suggestions: suggs }, toTTSText(resp, lang));
       return;
     }
-    // 2. QA keyword match
+    // 2. AI chat endpoint
+    try {
+      const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+      const r = await fetch(`${BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed, lang,
+          crop: localStorage.getItem('selectedCrop') ?? undefined,
+          mandi: localStorage.getItem('selectedMarket') ?? undefined,
+        }),
+        signal: AbortSignal.timeout(9000),
+      });
+      if (r.ok) {
+        const { reply } = await r.json();
+        if (reply) {
+          deliverBotMessage({ from: 'bot', text: reply, suggestions: getDefaultSuggestions(0, lang) }, reply);
+          return;
+        }
+      }
+    } catch {}
+    // 3. QA keyword match fallback
     const { answer, found, matchedIndex } = findAnswer(trimmed, lang);
     if (found) {
       deliverBotMessage({ from: 'bot', text: answer, suggestions: getRelatedSuggestions(matchedIndex, lang) }, answer);
       return;
     }
-    // 3. No match
+    // 4. No match
     noAnswerSeedRef.current += 1;
     deliverBotMessage({
       from: 'bot', text: t('support.noAnswer'), showEmail: true,

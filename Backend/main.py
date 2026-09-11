@@ -361,6 +361,63 @@ class PredictRequest(BaseModel):
     days_ahead: int = Field(30, ge=1, le=365)
     model: Literal["reversion"] = "reversion"
 
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=500)
+    lang: str = Field("hi", max_length=5)
+    crop: Optional[str] = Field(None, max_length=100)
+    mandi: Optional[str] = Field(None, max_length=100)
+
+class ChatResponse(BaseModel):
+    reply: str
+
+MANDIQ_SYSTEM_PROMPT = """You are MandiQ Assistant — a helpful AI assistant built into the MandiQ app,
+a free agricultural mandi price app made for Indian farmers.
+
+ABOUT MANDIQ:
+- MandiQ is 100% free — no charges for any feature
+- Shows live mandi prices from AGMARKNET (Government of India official portal), updated daily
+- Gives 7-day AI price predictions using machine learning
+- Supports price alerts (push notification when price crosses your target)
+- Available in Hindi, Punjabi, Marathi, and English
+
+AVAILABLE MANDIS:
+- Delhi: Azadpur APMC, Keshopur APMC
+- Uttar Pradesh: Prayagraj APMC
+
+AVAILABLE CROPS:
+- Delhi mandis: Tomato, Potato, Onion, Spinach
+- Prayagraj APMC: Tomato, Potato, Onion
+
+APP SCREENS:
+1. HOME: Select state → mandi → crop → tap "Check Price"
+   Shows today's live price, 7-day chart, and mandi comparison (which mandi gives best net price after transport deduction)
+2. PREDICTION (chart icon): 7-day forecast with confidence band, highlights best day to sell in orange
+3. ALERTS (bell icon): Set a target price — get notified when price crosses it. Also has "Best Day Alert"
+4. PAST TREND: Historical price charts for understanding seasonal patterns
+5. MANDI INFO: Contact and location details of each mandi
+6. PROFILE: Change language, view account, logout
+
+PREDICTION:
+- Accuracy: 70–90% depending on crop and season
+- Uses AGMARKNET data + mean-reversion ML model
+- Best selling day shown with orange dot on the chart
+- Prices marked "~अनुमानित" are estimates (live data not yet available that day)
+
+HOW TO USE:
+- Check price: Home → state → mandi → crop → Check Price button
+- Set alert: Alerts screen → enter target price → save
+- Change language: Profile screen → language button
+- Compare mandis: Home screen → scroll down after checking price
+
+RULES FOR YOUR RESPONSES:
+- Always reply in the SAME language the user wrote in (if Hindi → Hindi, Punjabi → Punjabi, Hinglish → Hindi)
+- Keep replies SHORT — 2 to 4 sentences max
+- Never make up specific prices — direct users to the app for live data
+- If asked about prices right now: say to check the Home screen for live prices
+- Be warm and helpful, like a knowledgeable farmer-friend
+- Support contact: alphacoders111@gmail.com (24-hour response)
+- If a question is completely unrelated to farming/mandis/MandiQ, politely say you can only help with MandiQ topics"""
+
 class CreateAlertRequest(BaseModel):
     crop: str = Field(..., min_length=2, max_length=100)
     market: str = Field("Azadpur APMC", min_length=2, max_length=100)
@@ -384,6 +441,37 @@ class PredFeedbackRequest(BaseModel):
 @app.get("/", tags=["Health"])
 def root():
     return {"status": "ok", "service": "MandiQ API", "version": "1.0.0"}
+
+# ─── AI Chat ───────────────────────────────────────────────────────────────────
+
+@app.post("/api/chat", response_model=ChatResponse, tags=["Chat"])
+async def chat_endpoint(req: ChatRequest):
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Chat AI not configured — add ANTHROPIC_API_KEY to environment")
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        context_parts = []
+        if req.crop:
+            context_parts.append(f"Selected crop: {req.crop}")
+        if req.mandi:
+            context_parts.append(f"Selected mandi: {req.mandi}")
+        context_parts.append(f"User language: {req.lang}")
+        user_content = f"[Context: {', '.join(context_parts)}]\n\n{req.message}"
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            system=MANDIQ_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_content}],
+        )
+        reply = msg.content[0].text.strip()
+        return ChatResponse(reply=reply)
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.warning(f"Chat AI error: {e}")
+        raise HTTPException(status_code=503, detail="Chat AI unavailable")
 
 @app.get("/health", tags=["Health"])
 def health():
