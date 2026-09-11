@@ -288,6 +288,20 @@ const PRICE_QUICK_CHIPS: Array<{ label: ML; query: string }> = [
   { label: { en: 'Onion price', hi: 'प्याज भाव', pa: 'ਪਿਆਜ਼ ਭਾਅ', mr: 'कांदा भाव' }, query: 'pyaz price today' },
 ];
 
+// App feature chips — QA actions for non-price features
+const FEATURE_QUICK_CHIPS: Array<{ label: ML; qaIndex: number }> = [
+  { label: { en: '7-Day Forecast', hi: '7 दिन अनुमान', pa: '7 ਦਿਨ ਭਵਿੱਖਬਾਣੀ', mr: '7 दिवस अंदाज' }, qaIndex: 6 },   // prediction
+  { label: { en: 'Best Day to Sell', hi: 'कब बेचें?', pa: 'ਕਦੋਂ ਵੇਚੀਏ?', mr: 'कधी विकावे?' }, qaIndex: 12 },          // best day
+  { label: { en: 'Set Price Alert', hi: 'अलर्ट लगाएं', pa: 'ਅਲਰਟ ਲਗਾਓ', mr: 'सूचना सेट करा' }, qaIndex: 7 },          // alert
+  { label: { en: 'Compare Mandis', hi: 'मंडी तुलना', pa: 'ਮੰਡੀ ਤੁਲਨਾ', mr: 'मंडी तुलना' }, qaIndex: 8 },               // compare
+  { label: { en: 'Which Mandis?', hi: 'कौन सी मंडी?', pa: 'ਕਿਹੜੀ ਮੰਡੀ?', mr: 'कोणती मंडी?' }, qaIndex: 3 },            // mandis
+  { label: { en: 'Which Crops?', hi: 'कौन सी फसल?', pa: 'ਕਿਹੜੀ ਫਸਲ?', mr: 'कोणते पीक?' }, qaIndex: 4 },               // crops
+  { label: { en: 'How Accurate?', hi: 'कितना सटीक?', pa: 'ਕਿੰਨਾ ਸਟੀਕ?', mr: 'किती अचूक?' }, qaIndex: 11 },             // accuracy
+  { label: { en: 'Data Source', hi: 'डेटा कहाँ से?', pa: 'ਡੇਟਾ ਕਿੱਥੋਂ?', mr: 'डेटा कुठून?' }, qaIndex: 13 },           // source
+  { label: { en: 'Change Language', hi: 'भाषा बदलें', pa: 'ਭਾਸ਼ਾ ਬਦਲੋ', mr: 'भाषा बदला' }, qaIndex: 9 },               // language
+  { label: { en: 'App not working?', hi: 'ऐप काम नहीं?', pa: 'ਐਪ ਕੰਮ ਨਹੀਂ?', mr: 'ॲप काम नाही?' }, qaIndex: 10 },     // help
+];
+
 declare global { interface Window { SpeechRecognition: typeof SpeechRecognition; webkitSpeechRecognition: typeof SpeechRecognition; } }
 const SPEAK_LANG: Record<Lang, string> = { en: 'en-IN', hi: 'hi-IN', pa: 'pa-IN', mr: 'mr-IN' };
 
@@ -310,8 +324,8 @@ export function SupportChat() {
   useEffect(() => {
     stopSpeech();
     const initSuggs: Suggestion[] = [
-      ...PRICE_QUICK_CHIPS.slice(0, 2).map(c => ({ label: c.label[lang] || c.label.en, action: 'price' as const, priceQuery: c.query })),
-      ...QA.slice(0, 3).map((qa, i) => ({ label: qa.question[lang] || qa.question.en, action: 'qa' as const, qaIndex: i })),
+      ...PRICE_QUICK_CHIPS.map(c => ({ label: c.label[lang] || c.label.en, action: 'price' as const, priceQuery: c.query })),
+      ...FEATURE_QUICK_CHIPS.slice(0, 4).map(c => ({ label: c.label[lang] || c.label.en, action: 'qa' as const, qaIndex: c.qaIndex })),
     ];
     setMessages([{ from: 'bot', text: t('support.greeting'), suggestions: initSuggs }]);
   }, [lang]);
@@ -449,13 +463,22 @@ export function SupportChat() {
             </button>
           </div>
 
-          {/* Quick price chips */}
+          {/* Quick chips — price + features */}
           <div className="px-3 pt-2 pb-1 flex gap-1.5 overflow-x-auto scrollbar-none" style={{ background: '#f0f7f1' }}>
             {PRICE_QUICK_CHIPS.map(c => (
               <button key={c.query}
                 onClick={() => sendPriceQuery(c.query, c.label[lang] || c.label.en)}
                 className="flex-shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold"
                 style={{ background: '#1C4230', color: '#fff' }}>
+                {c.label[lang] || c.label.en}
+              </button>
+            ))}
+            <span className="flex-shrink-0 w-px self-stretch bg-gray-300 mx-0.5" />
+            {FEATURE_QUICK_CHIPS.map(c => (
+              <button key={c.qaIndex}
+                onClick={() => sendByIndex(c.label[lang] || c.label.en, c.qaIndex)}
+                className="flex-shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold border"
+                style={{ background: '#fff', color: '#1C4230', borderColor: '#1C423033' }}>
                 {c.label[lang] || c.label.en}
               </button>
             ))}
