@@ -63,11 +63,12 @@ export function PredictionScreen() {
           const today = new Date();
           p = Array.from({ length: 7 }, (_, i) => {
             const d = new Date(today); d.setDate(d.getDate() + i + 1);
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const seed = d.getDate() + d.getMonth() * 31 + i * 7;
-            const jitter = ((seed * 13) % 21) - 10;
-            const price = Math.round(base + jitter);
+            const internalJitter = ((seed * 13) % 21) - 10;
+            const price = Math.round(base + internalJitter + predictionJitter(dateStr));
             return {
-              date: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
+              date: dateStr,
               predicted_price: price, lower_bound: Math.round(price * 0.95),
               upper_bound: Math.round(price * 1.05), confidence: 65, unit: 'Rs./Quintal',
             };
@@ -180,7 +181,7 @@ export function PredictionScreen() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0ee" vertical={false} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }}
-                  domain={['dataMin - 200', 'dataMax + 200']} tickFormatter={v => `₹${v}`} />
+                  domain={[(d: number) => Math.floor(d * 0.97), (d: number) => Math.ceil(d * 1.03)]} tickFormatter={v => `₹${v}`} />
                 <Tooltip
                   contentStyle={{ background: '#fff', border: '1px solid #f0f0ee', borderRadius: '12px', padding: '10px 14px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                   formatter={(v: number, n: string) => {
