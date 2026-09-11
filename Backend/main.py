@@ -412,8 +412,12 @@ def api_send_otp(req: SendOtpRequest, request: Request):
     db.save_otp(req.mobile, otp, expires_at)
     
     _send_otp(req.mobile, otp)
-    
-    return {"status": "sent"}
+
+    resp: dict = {"status": "sent"}
+    # Dev mode mein actual OTP bhi bhejo (jab DEV_OTP_BYPASS .env mein set ho)
+    if DEV_OTP_BYPASS:
+        resp["testing_otp"] = otp
+    return resp
 
 @app.post("/api/auth/verify-otp")
 def api_verify_otp(req: VerifyOtpRequest, request: Request):
