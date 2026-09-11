@@ -239,6 +239,28 @@ async function buildPriceResponse(
   return { text: bestMsgs[lang] || bestMsgs.en, priceCard: { crop, mandi: best.mandi, price: best.price, change: best.change, predicted: best.predicted } };
 }
 
+// ─── TTS text cleaner ──────────────────────────────────────────────────────────
+
+const RUPEE_WORD: Record<Lang, string> = { en: 'rupees', hi: 'रुपये', pa: 'ਰੁਪਏ', mr: 'रुपये' };
+const UP_WORD: Record<Lang, string>    = { en: 'up', hi: 'बढ़ा', pa: 'ਵਧਿਆ', mr: 'वाढले' };
+const DOWN_WORD: Record<Lang, string>  = { en: 'down', hi: 'घटा', pa: 'ਘਟਿਆ', mr: 'कमी झाले' };
+const SAME_WORD: Record<Lang, string>  = { en: 'same', hi: 'बराबर', pa: 'ਬਰਾਬਰ', mr: 'समान' };
+
+function toTTSText(text: string, lang: Lang): string {
+  return text
+    .replace(/₹([\d,]+)/g, (_, n) => `${n.replace(/,/g, '')} ${RUPEE_WORD[lang]}`)
+    .replace(/↑/g, UP_WORD[lang])
+    .replace(/↓/g, DOWN_WORD[lang])
+    .replace(/→/g, SAME_WORD[lang])
+    .replace(/📡|~/g, '')
+    .replace(/Live \(AGMARKNET\)/gi, '')
+    .replace(/अनुमानित/g, lang === 'hi' ? 'अनुमानित' : '')
+    .replace(/\n+/g, ', ')
+    .replace(/•/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // ─── NLP matching ───────────────────────────────────────────────────────────────
 
 function findAnswer(query: string, lang: Lang): { answer: string; found: boolean; matchedIndex: number } {
@@ -371,7 +393,7 @@ export function SupportChat() {
     if (detected) {
       const { text, priceCard } = await buildPriceResponse(detected.crop, detected.mandi, lang);
       const suggs = getPriceSuggestions(detected.crop, lang);
-      deliverBotMessage({ from: 'bot', text, priceCard, suggestions: suggs }, text);
+      deliverBotMessage({ from: 'bot', text, priceCard, suggestions: suggs }, toTTSText(text, lang));
     } else {
       noAnswerSeedRef.current += 1;
       deliverBotMessage({
@@ -395,7 +417,7 @@ export function SupportChat() {
     if (priceDetect) {
       const { text: resp, priceCard } = await buildPriceResponse(priceDetect.crop, priceDetect.mandi, lang);
       const suggs = getPriceSuggestions(priceDetect.crop, lang);
-      deliverBotMessage({ from: 'bot', text: resp, priceCard, suggestions: suggs }, resp);
+      deliverBotMessage({ from: 'bot', text: resp, priceCard, suggestions: suggs }, toTTSText(resp, lang));
       return;
     }
     // 2. QA keyword match
@@ -492,7 +514,7 @@ export function SupportChat() {
                   <div className="flex items-start gap-1.5">
                     <span className="flex-1">{msg.text}</span>
                     {msg.from === 'bot' && (
-                      <button onClick={() => speak(msg.text)}
+                      <button onClick={() => speak(toTTSText(msg.text, lang))}
                         className="flex-shrink-0 mt-0.5 p-1 rounded-lg opacity-40 hover:opacity-90 transition-opacity"
                         style={{ color: '#2d6a3e' }}>
                         <Volume2 className="w-3 h-3" />
