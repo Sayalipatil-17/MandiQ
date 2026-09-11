@@ -163,7 +163,7 @@ export function AlertsScreen() {
     <div className="min-h-screen bg-[#f4f6f4] pb-20 max-w-md mx-auto mq-fadein">
       {/* Header */}
       <div className="mq-header px-6 pt-10 pb-6 rounded-b-[2.5rem]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <button onClick={() => nav('/home')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
@@ -171,6 +171,11 @@ export function AlertsScreen() {
             <h2 className="text-lg font-semibold text-white">{t('alerts.title')}</h2>
             <p className="text-white/70 text-xs">{t('alerts.subtitle')}</p>
           </div>
+        </div>
+        {/* Selected mandi chip */}
+        <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur rounded-xl px-3 py-2 w-fit">
+          <span className="text-white/80 text-xs">📍</span>
+          <span className="text-white text-xs font-semibold">{selectedMarket}</span>
         </div>
       </div>
 
