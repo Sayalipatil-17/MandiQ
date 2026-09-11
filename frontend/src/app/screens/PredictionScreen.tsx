@@ -90,7 +90,7 @@ export function PredictionScreen() {
     upper: Math.round(p.upper_bound),
   }));
 
-  let bp = tpDisplay, bd = '', bi = -1;
+  let bp = 0, bd = '', bi = -1;
   preds.forEach((p, i) => {
     if (Math.round(p.predicted_price) > bp) { bp = Math.round(p.predicted_price); bd = wd(p.date, lang); bi = i; }
   });
