@@ -52,7 +52,7 @@ export function PredictionScreen() {
         const h: PriceRecord[] = hRes.status === 'fulfilled' ? hRes.value : [];
         let p: Prediction[]    = pRes.status === 'fulfilled'
           ? pRes.value.map(pred => {
-              const j = predictionJitter(pred.date);
+              const j = predictionJitter(pred.date, `${crop}|${mkt}`);
               return { ...pred, predicted_price: pred.predicted_price + j, lower_bound: pred.lower_bound + j, upper_bound: pred.upper_bound + j };
             })
           : [];
@@ -66,7 +66,7 @@ export function PredictionScreen() {
             const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const seed = d.getDate() + d.getMonth() * 31 + i * 7;
             const internalJitter = ((seed * 13) % 21) - 10;
-            const price = Math.round(base + internalJitter + predictionJitter(dateStr));
+            const price = Math.round(base + internalJitter + predictionJitter(dateStr, `${crop}|${mkt}`));
             return {
               date: dateStr,
               predicted_price: price, lower_bound: Math.round(price * 0.95),

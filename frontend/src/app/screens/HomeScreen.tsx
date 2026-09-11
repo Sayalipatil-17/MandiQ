@@ -92,6 +92,7 @@ function buildDayStrip(
   history: PriceRecord[],
   predictions: Prediction[],
   todayLabel: string,
+  cropMarket = '',
 ): { strip: DayEntry[]; todayIdx: number } {
   const actualMap = new Map<string, number>();
   history.forEach(h => {
@@ -130,7 +131,7 @@ function buildDayStrip(
         isActual: true,
       };
     } else if (pred) {
-      const jitter = predictionJitter(key);
+      const jitter = predictionJitter(key, cropMarket);
       entry = {
         dateKey: key,
         label: offset === 0 ? todayLabel : weekday(key),
@@ -434,7 +435,7 @@ export function HomeScreen() {
   }, []);
 
   // 7-din ki strip: jahan scrape ho chuki wahan actual, warna prediction
-  const { strip: dayStrip, todayIdx } = buildDayStrip(history, predictions, t('common.today'));
+  const { strip: dayStrip, todayIdx } = buildDayStrip(history, predictions, t('common.today'), `${selectedCrop}|${selectedMarket}`);
 
   // selectedDayIdx -1 hai to aaj ka din dikhao
   const activeIdx = selectedDayIdx >= 0 && selectedDayIdx < dayStrip.length ? selectedDayIdx : todayIdx;
