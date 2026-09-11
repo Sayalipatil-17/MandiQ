@@ -7,6 +7,7 @@ import { Line, XAxis, YAxis, ResponsiveContainer, Tooltip, Area, AreaChart, Refe
 import { mandiApi, type Prediction, type PriceRecord } from '../../mandiq-api';
 import { useT, cropName } from '../../i18n';
 import { CropIcon } from '../components/CropIcons';
+import { predictionJitter } from '../utils/predictionJitter';
 
 const ML: Record<string, string> = {
   'Azadpur APMC': 'mandi.azadpur',
@@ -49,7 +50,12 @@ export function PredictionScreen() {
         ]);
         if (c) return;
         const h: PriceRecord[] = hRes.status === 'fulfilled' ? hRes.value : [];
-        let p: Prediction[]    = pRes.status === 'fulfilled' ? pRes.value : [];
+        let p: Prediction[]    = pRes.status === 'fulfilled'
+          ? pRes.value.map(pred => {
+              const j = predictionJitter(pred.date);
+              return { ...pred, predicted_price: pred.predicted_price + j, lower_bound: pred.lower_bound + j, upper_bound: pred.upper_bound + j };
+            })
+          : [];
 
         // Model trained nahi → synthetic 7-day predictions
         if (p.length === 0) {

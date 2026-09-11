@@ -12,6 +12,7 @@ import { checkAndNotifyTriggeredAlerts } from '../../onesignal';
 import { requestAllAppPermissions } from '../../permissions';
 import { analytics, logEvent } from '../../firebase';
 import { MANDI_MAP, MARKETS_BY_STATE, CROPS_BY_STATE } from '../config/mandis';
+import { predictionJitter } from '../utils/predictionJitter';
 import { CropIcon, MandiIcon } from '../components/CropIcons';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -129,12 +130,13 @@ function buildDayStrip(
         isActual: true,
       };
     } else if (pred) {
+      const jitter = predictionJitter(key);
       entry = {
         dateKey: key,
         label: offset === 0 ? todayLabel : weekday(key),
-        price: Math.round(pred.predicted_price),
-        lower: Math.round(pred.lower_bound),
-        upper: Math.round(pred.upper_bound),
+        price: Math.round(pred.predicted_price) + jitter,
+        lower: Math.round(pred.lower_bound) + jitter,
+        upper: Math.round(pred.upper_bound) + jitter,
         isActual: false,
       };
     } else {
