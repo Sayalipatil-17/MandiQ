@@ -56,34 +56,84 @@ interface QAEntry { keywords: string[]; phrases: string[]; question: ML; answer:
 
 const QA: QAEntry[] = [
   {
-    phrases: ['mandiq kya hai', 'ye app kya hai', 'is app ke baare', 'mandiq ke baare mein', 'mandiq kya hota hai', 'mandiq describe karo', 'app ke baare mein batao', 'kya ye app hai', 'yeh kya hai', 'mandiq क्या है', 'यह ऐप क्या है'],
-    keywords: ['mandiq', 'mandik', 'app', 'introduce', 'about', 'describe', 'batao', 'बताओ', 'क्या है', 'ਕੀ ਹੈ', 'काय आहे', 'explain'],
+    phrases: [
+      'hi', 'hello', 'namaste', 'namaskar', 'hey', 'hlo', 'hii', 'helloo', 'sat sri akal', 'jai hind',
+      'kya haal hai', 'kaisa hai', 'kya chal raha hai', 'assalamualaikum', 'good morning', 'good evening',
+    ],
+    keywords: ['hi', 'hello', 'hey', 'namaste', 'namaskar', 'hlo', 'hii', 'greet', 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ', 'नमस्ते'],
+    question: { en: 'Hello!', hi: 'नमस्ते!', pa: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ!', mr: 'नमस्कार!' },
+    answer: { en: 'Hello! 👋 I\'m MandiQ\'s assistant. Ask me anything about prices, predictions, alerts or how to use the app!', hi: 'नमस्ते! 👋 मैं MandiQ का assistant हूँ। कीमत, अनुमान, अलर्ट या app के बारे में कुछ भी पूछें!', pa: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! 👋 ਮੈਂ MandiQ ਦਾ assistant ਹਾਂ। ਭਾਅ, ਭਵਿੱਖਬਾਣੀ ਜਾਂ ਐਪ ਬਾਰੇ ਕੁਝ ਵੀ ਪੁੱਛੋ!', mr: 'नमस्कार! 👋 मी MandiQ चा assistant आहे. किंमत, अंदाज, सूचना किंवा app बद्दल काहीही विचारा!' },
+  },
+  {
+    phrases: [
+      'shukriya', 'dhanyawad', 'thanks', 'thank you', 'thank u', 'thnx', 'thx', 'bahut bahut shukriya',
+      'bahut acha', 'very good', 'shabash', 'wah', 'great', 'acha', 'bilkul sahi', 'perfect',
+      'helpful tha', 'meri madad ki', 'accha jawab diya',
+    ],
+    keywords: ['thanks', 'thank', 'shukriya', 'dhanyawad', 'शुक्रिया', 'धन्यवाद', 'ਸ਼ੁਕਰੀਆ', 'helpful', 'good', 'great', 'perfect'],
+    question: { en: 'Thank you!', hi: 'शुक्रिया!', pa: 'ਸ਼ੁਕਰੀਆ!', mr: 'धन्यवाद!' },
+    answer: { en: 'You\'re welcome! 😊 If you have more questions about MandiQ — prices, alerts, or predictions — just ask anytime!', hi: 'खुशी हुई! 😊 MandiQ के बारे में और कोई सवाल हो — कीमत, अलर्ट या अनुमान — तो कभी भी पूछें!', pa: 'ਖੁਸ਼ੀ ਹੋਈ! 😊 MandiQ ਬਾਰੇ ਹੋਰ ਸਵਾਲ ਹੋਣ ਤਾਂ ਕਦੇ ਵੀ ਪੁੱਛੋ!', mr: 'आनंद झाला! 😊 MandiQ बद्दल आणखी प्रश्न असतील तर कधीही विचारा!' },
+  },
+  {
+    phrases: [
+      'mandiq kya hai', 'ye app kya hai', 'is app ke baare mein batao', 'mandiq ke baare mein', 'mandiq kya hota hai',
+      'mandiq describe karo', 'app ke baare mein batao', 'yeh kya hai', 'mandiq क्या है', 'यह ऐप क्या है',
+      'ye app kis kaam aata hai', 'mandiq kisliye hai', 'mandiq kiske liye hai', 'kisaan ke liye hai kya',
+      'kya ye kisano ka app hai', 'mandi price app kya hai', 'mandiq app ki jankari do',
+      'is app se kya hota hai', 'app ka naam mandiq kyon hai', 'mandiq kya cheez hai',
+    ],
+    keywords: ['mandiq', 'mandik', 'app', 'introduce', 'about', 'describe', 'explain', 'jankari', 'kisaan', 'farmer', 'बताओ', 'क्या है', 'ਕੀ ਹੈ', 'काय आहे', 'kisliye', 'purpose'],
     question: { en: 'What is MandiQ?', hi: 'मंडीक्यू क्या है?', pa: 'ਮੰਡੀਕਿਊ ਕੀ ਹੈ?', mr: 'मंडीक्यू काय आहे?' },
     answer: { en: 'MandiQ is a free AI-powered mandi price app for farmers. It shows live prices from AGMARKNET, 7-day AI predictions, mandi comparison, and price alerts — in Hindi, Punjabi, Marathi and English.', hi: 'MandiQ किसानों के लिए एक मुफ़्त AI मंडी ऐप है। इसमें AGMARKNET से लाइव कीमत, 7 दिन का AI पूर्वानुमान, मंडी तुलना और अलर्ट — हिंदी, पंजाबी, मराठी और अंग्रेज़ी में मिलता है।', pa: 'MandiQ ਕਿਸਾਨਾਂ ਲਈ ਮੁਫ਼ਤ AI ਮੰਡੀ ਭਾਅ ਐਪ ਹੈ। AGMARKNET ਤੋਂ ਲਾਈਵ ਭਾਅ, 7-ਦਿਨ AI ਭਵਿੱਖਬਾਣੀ, ਮੰਡੀ ਤੁਲਨਾ ਅਤੇ ਅਲਰਟ।', mr: 'MandiQ हे शेतकऱ्यांसाठी मोफत AI मंडी किंमत ॲप आहे. AGMARKNET कडून थेट किंमत, 7 दिवसांचा अंदाज, मंडी तुलना आणि सूचना मिळते.' },
   },
   {
-    phrases: ['free hai kya', 'paisa lagta hai kya', 'koi charge nahi', 'muft hai kya', 'free of cost', 'paid hai kya', 'paise lagte hain', 'kharcha lagta hai', 'subscription hai kya', 'subscription lagti hai', 'muft milta hai', 'पैसे लगते हैं क्या', 'मुफ्त है क्या', 'free है क्या'],
-    keywords: ['free', 'muft', 'मुफ्त', 'paisa', 'paise', 'charge', 'cost', 'fees', 'payment', 'paid', 'subscription', 'ਮੁਫ਼ਤ', 'मोफत', 'kharch', 'mulya', 'शुल्क', 'ਖਰਚਾ'],
+    phrases: [
+      'free hai kya', 'paisa lagta hai kya', 'koi charge nahi', 'muft hai kya', 'free of cost',
+      'paid hai kya', 'paise lagte hain', 'kharcha lagta hai', 'subscription hai kya', 'muft milta hai',
+      'kya ye paid app hai', 'koi fees lagti hai', 'use karne ke paise lagte hain', 'kitna paisa lagta hai',
+      'monthly charge hai kya', 'premium plan hai kya', 'plan khareedna padega kya', 'पैसे लगते हैं',
+      'is app ke liye paisa dena padega', 'gratis hai kya', 'kya charges hain',
+    ],
+    keywords: ['free', 'muft', 'मुफ्त', 'paisa', 'paise', 'charge', 'cost', 'fees', 'payment', 'paid', 'subscription', 'ਮੁਫ਼ਤ', 'मोफत', 'kharch', 'premium', 'plan', 'monthly', 'शुल्क', 'ਖਰਚਾ', 'gratis'],
     question: { en: 'Is the app free?', hi: 'क्या ऐप मुफ़्त है?', pa: 'ਕੀ ਐਪ ਮੁਫ਼ਤ ਹੈ?', mr: 'ॲप मोफत आहे का?' },
     answer: { en: 'MandiQ is 100% free! Price check, 7-day prediction, alerts, mandi comparison — everything is free. No subscription, no hidden charges, ever.', hi: 'MandiQ बिल्कुल मुफ़्त है! कीमत देखना, 7 दिन का अनुमान, अलर्ट, मंडी तुलना — सब कुछ मुफ़्त। कोई subscription या छुपा हुआ शुल्क नहीं।', pa: 'MandiQ ਬਿਲਕੁਲ ਮੁਫ਼ਤ ਹੈ! ਭਾਅ ਦੇਖਣਾ, 7-ਦਿਨ ਭਵਿੱਖਬਾਣੀ, ਅਲਰਟ — ਸਭ ਮੁਫ਼ਤ। ਕੋਈ ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਨਹੀਂ।', mr: 'MandiQ 100% मोफत आहे! किंमत पाहणे, 7 दिवसांचा अंदाज, सूचना — सर्व मोफत. कोणतीही subscription नाही.' },
   },
   {
-    phrases: ['bhav kaise dekhen', 'price kaise check karein', 'rate kaise pata kare', 'kimat kaise janein', 'kaise dekhun', 'price kaise dekhte hain', 'check karna hai price', 'bhav kaise pata kare', 'use kaise karein', 'app kaise use karein', 'kaise chalayein', 'kaise use karte hain', 'price dekhna hai', 'rate check karna hai'],
-    keywords: ['kaise', 'कैसे', 'how', 'check', 'dekhen', 'देखें', 'use', 'tutorial', 'guide', 'sikhaiye', 'sikhao', 'chalao', 'ਕਿਵੇਂ', 'कसे'],
+    phrases: [
+      'bhav kaise dekhen', 'price kaise check karein', 'rate kaise pata kare', 'kimat kaise janein',
+      'kaise dekhun', 'price kaise dekhte hain', 'check karna hai price', 'use kaise karein',
+      'app kaise use karein', 'kaise chalayein', 'price dekhna hai', 'rate check karna hai',
+      'step by step batao', 'kaise kaam karta hai', 'kya karna hoga', 'kaise shuru karein',
+      'pehla step kya hai', 'app chalana sikhaiye', 'guide karo mujhe', 'tutorial chahiye',
+      'bhav kaise milega', 'price check ka tarika', 'naya hoon samjhao',
+    ],
+    keywords: ['kaise', 'कैसे', 'how', 'check', 'dekhen', 'देखें', 'use', 'tutorial', 'guide', 'step', 'sikhao', 'chalao', 'ਕਿਵੇਂ', 'कसे', 'shuru', 'start', 'tarika'],
     question: { en: 'How to check price?', hi: 'कीमत कैसे देखें?', pa: 'ਭਾਅ ਕਿਵੇਂ ਦੇਖੀਏ?', mr: 'किंमत कशी पाहावी?' },
     answer: { en: 'Home screen → tap your State (Delhi / UP) → select a Mandi → select a Crop → tap "Check Price". Live price + 7-day chart appears instantly.', hi: 'होम स्क्रीन → राज्य चुनें (Delhi / UP) → मंडी चुनें → फसल चुनें → "कीमत देखें" दबाएं। लाइव कीमत + 7 दिन का चार्ट तुरंत दिखेगा।', pa: 'ਹੋਮ ਸਕਰੀਨ → ਰਾਜ ਚੁਣੋ (Delhi/UP) → ਮੰਡੀ ਚੁਣੋ → ਫਸਲ ਚੁਣੋ → "ਭਾਅ ਦੇਖੋ" ਦਬਾਓ। ਲਾਈਵ ਭਾਅ ਤੁਰੰਤ ਦਿਖੇਗਾ।', mr: 'होम स्क्रीन → राज्य निवडा → मंडी निवडा → पीक निवडा → "किंमत पाहा" दाबा. थेट किंमत लगेच दिसेल.' },
   },
   {
-    phrases: ['kaun si mandis hain', 'available mandis', 'kaunsi market available hai', 'kitni mandis hain', 'mandis list', 'kaunsi mandi hai', 'mandi kaun kaun si hai', 'mandis kaun si', 'कौन सी मंडियाँ हैं', 'कितनी मंडियाँ हैं', 'mandi list kya hai'],
-    keywords: ['mandi', 'mandis', 'मंडी', 'market', 'markets', 'available', 'list', 'kitni', 'कौन सी', 'कितनी', 'ਮੰਡੀਆਂ'],
+    phrases: [
+      'kaun si mandis hain', 'available mandis', 'kaunsi market available hai', 'kitni mandis hain',
+      'mandis list', 'kaunsi mandi hai', 'mandi kaun kaun si hai', 'कौन सी मंडियाँ हैं',
+      'delhi ki mandi', 'azadpur kahan hai', 'keshopur mandi', 'konsi mandis cover karti hai',
+      'aur mandis kab aayengi', 'meri state ki mandi hai kya', 'nai mandis aayengi',
+      'mandi add hogi kab', 'is state ki mandi hai', 'mandis ka naam batao',
+    ],
+    keywords: ['mandi', 'mandis', 'मंडी', 'market', 'available', 'list', 'kitni', 'azadpur', 'keshopur', 'prayagraj', 'delhi', 'ਮੰਡੀਆਂ', 'add', 'aur', 'new'],
     question: { en: 'Which mandis are available?', hi: 'कौन सी मंडियाँ हैं?', pa: 'ਕਿਹੜੀਆਂ ਮੰਡੀਆਂ ਹਨ?', mr: 'कोणत्या मंड्या आहेत?' },
-    answer: { en: 'MandiQ currently has 3 mandis:\n• Delhi: Azadpur APMC, Keshopur APMC\n• Uttar Pradesh: Prayagraj APMC\nSelect your state on the Home screen first, then choose your mandi.', hi: 'अभी MandiQ में 3 मंडियाँ हैं:\n• दिल्ली: अजादपुर APMC, केशोपुर APMC\n• उत्तर प्रदेश: प्रयागराज APMC\nहोम स्क्रीन पर पहले राज्य चुनें, फिर मंडी।', pa: 'MandiQ ਵਿੱਚ 3 ਮੰਡੀਆਂ ਹਨ:\n• ਦਿੱਲੀ: ਅਜ਼ਾਦਪੁਰ APMC, ਕੇਸ਼ੋਪੁਰ APMC\n• ਯੂਪੀ: ਪ੍ਰਯਾਗਰਾਜ APMC', mr: 'MandiQ मध्ये 3 मंड्या आहेत:\n• दिल्ली: अझादपूर APMC, केशोपूर APMC\n• यूपी: प्रयागराज APMC' },
+    answer: { en: 'MandiQ currently has 3 mandis:\n• Delhi: Azadpur APMC, Keshopur APMC\n• Uttar Pradesh: Prayagraj APMC\nMore mandis are being added. Select your state on Home screen first, then choose your mandi.', hi: 'अभी MandiQ में 3 मंडियाँ हैं:\n• दिल्ली: अजादपुर APMC, केशोपुर APMC\n• उत्तर प्रदेश: प्रयागराज APMC\nऔर मंडियाँ जल्द जोड़ी जाएंगी। होम स्क्रीन पर पहले राज्य चुनें।', pa: 'MandiQ ਵਿੱਚ 3 ਮੰਡੀਆਂ ਹਨ:\n• ਦਿੱਲੀ: ਅਜ਼ਾਦਪੁਰ APMC, ਕੇਸ਼ੋਪੁਰ APMC\n• ਯੂਪੀ: ਪ੍ਰਯਾਗਰਾਜ APMC\nਹੋਰ ਮੰਡੀਆਂ ਜਲਦ ਆਉਣਗੀਆਂ।', mr: 'MandiQ मध्ये 3 मंड्या:\n• दिल्ली: अझादपूर APMC, केशोपूर APMC\n• यूपी: प्रयागराज APMC\nआणखी मंड्या लवकरच येतील.' },
   },
   {
-    phrases: ['kaun si fasal hain', 'available fasal', 'kaun si sabzi', 'kitni crops', 'kaunsi crop supported hai', 'kon si fasal', 'fasal kaun kaun si hai', 'कौन सी फसलें हैं', 'konse crop hain'],
-    keywords: ['fasal', 'फसल', 'crop', 'crops', 'sabzi', 'vegetable', 'supported', 'kaunsi', 'ਫਸਲ', 'पीक', 'tomato', 'potato', 'onion', 'spinach', 'tamatar', 'aloo', 'pyaz', 'palak'],
+    phrases: [
+      'kaun si fasal hain', 'available fasal', 'kaun si sabzi', 'kitni crops', 'kaunsi crop supported hai',
+      'fasal kaun kaun si hai', 'कौन सी फसलें हैं', 'konse crop hain',
+      'tamatar ka bhav hai kya', 'aloo ka bhav hai kya', 'pyaz ka bhav hai kya', 'palak ka bhav hai kya',
+      'spinach supported hai', 'naye crops kab aayenge', 'aur fasal add hongi',
+      'garlic ka bhav', 'lahsun ka bhav', 'cauliflower ka bhav', 'gobhi ka bhav',
+    ],
+    keywords: ['fasal', 'फसल', 'crop', 'crops', 'sabzi', 'vegetable', 'supported', 'ਫਸਲ', 'पीक', 'tomato', 'potato', 'onion', 'spinach', 'tamatar', 'aloo', 'pyaz', 'palak', 'टमाटर', 'आलू', 'प्याज', 'पालक'],
     question: { en: 'Which crops are supported?', hi: 'कौन सी फसलें हैं?', pa: 'ਕਿਹੜੀਆਂ ਫਸਲਾਂ ਹਨ?', mr: 'कोणती पिके आहेत?' },
-    answer: { en: 'Delhi mandis (Azadpur, Keshopur): Tomato, Potato, Onion, Spinach\nUP (Prayagraj APMC): Tomato, Potato, Onion\nSelect your state first — the right crops for your region will appear.', hi: 'दिल्ली मंडी (अजादपुर, केशोपुर): टमाटर, आलू, प्याज, पालक\nUP (प्रयागराज APMC): टमाटर, आलू, प्याज\nपहले राज्य चुनें — आपके क्षेत्र की फसलें दिखेंगी।', pa: 'ਦਿੱਲੀ ਮੰਡੀ: ਟਮਾਟਰ, ਆਲੂ, ਪਿਆਜ਼, ਪਾਲਕ\nਯੂਪੀ (ਪ੍ਰਯਾਗਰਾਜ): ਟਮਾਟਰ, ਆਲੂ, ਪਿਆਜ਼', mr: 'दिल्ली मंड्या: टोमॅटो, बटाटा, कांदा, पालक\nयूपी (प्रयागराज): टोमॅटो, बटाटा, कांदा' },
+    answer: { en: 'Delhi mandis (Azadpur, Keshopur): Tomato 🍅, Potato 🥔, Onion 🧅, Spinach 🥬\nUP (Prayagraj APMC): Tomato, Potato, Onion\nSelect your state first — the right crops appear automatically.', hi: 'दिल्ली मंडी (अजादपुर, केशोपुर): टमाटर 🍅, आलू 🥔, प्याज 🧅, पालक 🥬\nUP (प्रयागराज APMC): टमाटर, आलू, प्याज\nपहले राज्य चुनें — उसी क्षेत्र की फसलें अपने आप आ जाएंगी।', pa: 'ਦਿੱਲੀ ਮੰਡੀ: ਟਮਾਟਰ🍅, ਆਲੂ🥔, ਪਿਆਜ਼🧅, ਪਾਲਕ🥬\nਯੂਪੀ: ਟਮਾਟਰ, ਆਲੂ, ਪਿਆਜ਼', mr: 'दिल्ली मंड्या: टोमॅटो🍅, बटाटा🥔, कांदा🧅, पालक🥬\nयूपी (प्रयागराज): टोमॅटो, बटाटा, कांदा' },
   },
   {
     phrases: ['uttar pradesh mandi', 'up ki mandi', 'prayagraj mandi kaise chunein', 'up mandi kaise use karein', 'allahabad mandi', 'prayagraj ka bhav', 'up mein kaun si mandi'],
@@ -92,26 +142,56 @@ const QA: QAEntry[] = [
     answer: { en: 'Home screen → tap "Uttar Pradesh" → select Prayagraj APMC → choose your crop (Tomato, Potato or Onion). Live price and 7-day forecast will load.', hi: 'होम स्क्रीन → "उत्तर प्रदेश" टैप करें → Prayagraj APMC चुनें → फसल चुनें (टमाटर, आलू या प्याज)। लाइव कीमत और 7 दिन का अनुमान दिखेगा।', pa: 'ਹੋਮ ਸਕਰੀਨ → "ਉੱਤਰ ਪ੍ਰਦੇਸ਼" ਟੈਪ ਕਰੋ → ਪ੍ਰਯਾਗਰਾਜ APMC ਚੁਣੋ → ਫਸਲ ਚੁਣੋ।', mr: 'होम स्क्रीन → "उत्तर प्रदेश" टॅप करा → प्रयागराज APMC निवडा → पीक निवडा.' },
   },
   {
-    phrases: ['7 din ka anuman', 'kal ka bhav', 'aage ka bhav', 'agla hafte ka bhav', 'next week price', 'prediction kaise kaam karta', 'AI forecast kya hai', 'bhavishya mein kya hoga', 'price badhega ya ghategga', 'agle 7 din', 'agle hafte', 'kal kya price hoga', 'forecast kaise kaam karta hai', '7 दिन का अनुमान', 'भविष्य में क्या होगा'],
-    keywords: ['prediction', 'predict', 'forecast', 'anuman', 'अनुमान', 'भविष्य', 'future', 'aage', 'kal', 'estimate', 'पूर्वानुमान', 'ਭਵਿੱਖਬਾਣੀ', 'अंदाज', 'agle'],
+    phrases: [
+      '7 din ka anuman', 'kal ka bhav', 'aage ka bhav', 'agla hafte ka bhav', 'next week price',
+      'prediction kaise kaam karta', 'AI forecast kya hai', 'bhavishya mein kya hoga',
+      'price badhega ya ghategga', 'agle 7 din', 'kal kya price hoga', 'forecast kaise kaam karta hai',
+      'agle hafte price kya hoga', 'price increase hoga kya', 'price decrease hoga kya',
+      'price giregi kya', 'price badhegi kya', 'price uthegi kya', 'agle din ka bhav',
+      'prediction screen kahan hai', 'forecast screen kaise kholein', 'ai se price pata karo',
+      'price ka andaza lagao', 'price kitna hoga kal', 'bhav aage badhega ya nahi',
+    ],
+    keywords: ['prediction', 'predict', 'forecast', 'anuman', 'अनुमान', 'भविष्य', 'future', 'aage', 'kal', 'estimate', 'पूर्वानुमान', 'ਭਵਿੱਖਬਾਣੀ', 'अंदाज', 'agle', 'increase', 'decrease', 'badhega', 'ghategga', 'giregi', 'uthegi', 'next', 'hafte'],
     question: { en: 'How does Prediction work?', hi: 'पूर्वानुमान कैसे काम करता है?', pa: 'ਭਵਿੱਖਬਾਣੀ ਕਿਵੇਂ ਕੰਮ ਕਰਦੀ ਹੈ?', mr: 'अंदाज कसा काम करतो?' },
     answer: { en: 'MandiQ\'s AI studies past AGMARKNET price patterns and predicts the next 7 days. Tap the chart icon (bottom nav) to open the Prediction screen — it shows a forecast with confidence range and highlights the best selling day in orange.', hi: 'MandiQ का AI पिछले AGMARKNET कीमत पैटर्न से अगले 7 दिनों का अनुमान लगाता है। नीचे चार्ट आइकन दबाकर Prediction स्क्रीन खोलें — वहाँ confidence range के साथ forecast और सबसे अच्छा बेचने का दिन (orange) दिखता है।', pa: 'MandiQ ਦਾ AI ਪਿਛਲੇ AGMARKNET ਡੇਟਾ ਤੋਂ ਅਗਲੇ 7 ਦਿਨਾਂ ਦੀ ਭਵਿੱਖਬਾਣੀ ਕਰਦਾ ਹੈ। ਹੇਠਾਂ ਚਾਰਟ ਆਈਕਨ ਦਬਾ ਕੇ Prediction ਸਕਰੀਨ ਖੋਲੋ।', mr: 'MandiQ चे AI मागील AGMARKNET डेटावरून पुढील 7 दिवसांचा अंदाज लावते. खालील चार्ट आयकॉन दाबून Prediction स्क्रीन उघडा.' },
   },
   {
-    phrases: ['kab bechna chahiye', 'kab bechunga', 'kab beche', 'bechne ka sahi time', 'best din kaunsa hai', 'sell karne ka sahi din', 'kab fasal bechun', 'when should i sell', 'kab bechun', 'sahi din kaunsa', 'best time to sell', 'fasal kab bechein', 'kab bechna theek hai', 'कब बेचना चाहिए', 'बेचने का सही समय', 'सबसे अच्छा दिन', 'ਕਦੋਂ ਵੇਚੀਏ'],
-    keywords: ['bechna', 'बेचना', 'sell', 'kab', 'कब', 'best day', 'sahi', 'best time', 'peak', 'maximum', 'orange', 'highlight', 'ਵੇਚਣਾ', 'विकणे'],
+    phrases: [
+      'kab bechna chahiye', 'kab bechunga', 'kab beche', 'bechne ka sahi time', 'best din kaunsa hai',
+      'sell karne ka sahi din', 'kab fasal bechun', 'kab bechun', 'sahi din kaunsa', 'best time to sell',
+      'fasal kab bechein', 'kab bechna theek hai', 'कब बेचना चाहिए', 'बेचने का सही समय',
+      'is hafte bechun ya agla hafte', 'aaj bechun ya kal', 'wait karoon ya abhi bechun',
+      'best selling day kaunsa hai', 'orange dot kya hai', 'highest price kab hoga',
+      'profit kab milega', 'kaunse din sabse zyada paisa milega', 'peak price ka din',
+    ],
+    keywords: ['bechna', 'बेचना', 'sell', 'kab', 'कब', 'best day', 'sahi', 'best time', 'peak', 'maximum', 'orange', 'ਵੇਚਣਾ', 'विकणे', 'profit', 'wait', 'aaj', 'kal', 'hafte', 'highest'],
     question: { en: 'When is the best day to sell?', hi: 'बेचने का सबसे अच्छा दिन?', pa: 'ਵੇਚਣ ਦਾ ਸਭ ਤੋਂ ਵਧੀਆ ਦਿਨ?', mr: 'विकण्याचा सर्वोत्तम दिवस?' },
-    answer: { en: 'Go to the Prediction screen (chart icon). The day with the highest predicted price is marked with an orange dot — that\'s your best selling day. You can also enable "Best Day Alert" in the Alerts screen to get notified automatically.', hi: 'Prediction स्क्रीन (चार्ट आइकन) पर जाएं। जिस दिन कीमत सबसे ज़्यादा अनुमानित है, उसपर orange dot लगा होगा — वही बेचने का सबसे अच्छा दिन है। अलर्ट स्क्रीन में "Best Day Alert" चालू करें ताकि उस दिन notification मिले।', pa: 'Prediction ਸਕਰੀਨ ਤੇ ਜਾਓ (ਚਾਰਟ ਆਈਕਨ)। ਜਿਸ ਦਿਨ ਭਾਅ ਸਭ ਤੋਂ ਵੱਧ ਹੋਵੇਗਾ, ਉਸ ਤੇ orange dot ਹੋਵੇਗਾ। ਅਲਰਟ ਸਕਰੀਨ ਵਿੱਚ Best Day Alert ਚਾਲੂ ਕਰੋ।', mr: 'Prediction स्क्रीन (चार्ट आयकॉन) वर जा. सर्वाधिक अंदाजित किंमतीच्या दिवशी orange dot असतो. Alerts स्क्रीनवर Best Day Alert चालू करा.' },
+    answer: { en: 'Go to the Prediction screen (chart icon). The day with the highest predicted price is marked with an orange dot — that\'s your best selling day. You can also enable "Best Day Alert" in the Alerts screen to get notified automatically.', hi: 'Prediction स्क्रीन (चार्ट आइकन) पर जाएं। जिस दिन कीमत सबसे ज़्यादा अनुमानित है, उसपर orange dot लगा होगा — वही बेचने का सबसे अच्छा दिन है। अलर्ट स्क्रीन में "Best Day Alert" चालू करें ताकि उस दिन notification मिले।', pa: 'Prediction ਸਕਰੀਨ ਤੇ ਜਾਓ। ਜਿਸ ਦਿਨ ਭਾਅ ਸਭ ਤੋਂ ਵੱਧ ਹੋਵੇਗਾ, ਉਸ ਤੇ orange dot ਹੋਵੇਗਾ। ਅਲਰਟ ਸਕਰੀਨ ਵਿੱਚ Best Day Alert ਚਾਲੂ ਕਰੋ।', mr: 'Prediction स्क्रीन वर जा. सर्वाधिक अंदाजित किंमतीच्या दिवशी orange dot असतो. Alerts स्क्रीनवर Best Day Alert चालू करा.' },
   },
   {
-    phrases: ['alert kaise lagaen', 'notification kaise set karein', 'price alert lagao', 'alarm kaise lagaen', 'mujhe batao jab price badhe', 'mujhe notification chahiye', 'alert set karna hai', 'price pe alert', 'jab price itna ho tab batao', 'price cross kare tab batao', 'अलर्ट कैसे लगाएं', 'सूचना कैसे सेट करें'],
-    keywords: ['alert', 'अलर्ट', 'notification', 'सूचना', 'alarm', 'lagao', 'inform', 'batao', 'ਅਲਰਟ', 'set karo', 'target price'],
+    phrases: [
+      'alert kaise lagaen', 'notification kaise set karein', 'price alert lagao', 'mujhe batao jab price badhe',
+      'mujhe notification chahiye', 'alert set karna hai', 'price pe alert', 'jab price itna ho tab batao',
+      'price cross kare tab batao', 'अलर्ट कैसे लगाएं', 'alarm set karna hai',
+      'price 2000 ho jaye to batao', 'target price set karna', 'price girne pe batao',
+      'price badhne pe notification chahiye', 'jab price neeche aye to batao',
+      'bell icon kahan hai', 'alert screen kahan hai', 'notification on karna hai',
+      'price limit set karna', 'target bhav set karo',
+    ],
+    keywords: ['alert', 'अलर्ट', 'notification', 'सूचना', 'alarm', 'lagao', 'inform', 'ਅਲਰਟ', 'target', 'bell', 'price limit', 'jab', 'cross', 'girne', 'badhne', 'set'],
     question: { en: 'How to set a price alert?', hi: 'अलर्ट कैसे सेट करें?', pa: 'ਅਲਰਟ ਕਿਵੇਂ ਸੈੱਟ ਕਰੀਏ?', mr: 'सूचना कशी सेट करावी?' },
     answer: { en: 'Tap the Bell icon (bottom nav) → enter your target price → choose "Above" or "Below" → tap Save. When the market price crosses your target, you\'ll get a push notification automatically.', hi: 'नीचे Bell आइकन दबाएं → अपनी लक्ष्य कीमत डालें → "ऊपर" या "नीचे" चुनें → सेव करें। जब बाज़ार कीमत उस स्तर को छुए, आपको push notification मिलेगी।', pa: 'ਹੇਠਾਂ Bell ਆਈਕਨ ਦਬਾਓ → ਟੀਚਾ ਭਾਅ ਦਾਖਲ ਕਰੋ → "ਉੱਪਰ" ਜਾਂ "ਹੇਠਾਂ" ਚੁਣੋ → ਸੇਵ ਕਰੋ।', mr: 'खालील Bell आयकॉन दाबा → लक्ष्य किंमत टाका → "वरती" किंवा "खाली" निवडा → सेव्ह करा.' },
   },
   {
-    phrases: ['mandi tulna karo', 'best mandi kaunsi hai', 'sabse acchi mandi', 'mandi comparison kaise karein', 'kaun si mandi zyada deti hai', 'net price kahan zyada hai', 'transport deduct karke', 'konsi mandi mein bechein', 'mujhe best mandi batao', 'मंडी तुलना', 'सबसे अच्छी मंडी'],
-    keywords: ['compare', 'tulna', 'तुलना', 'comparison', 'best mandi', 'sabse', 'zyada', 'net price', 'transport', 'ਤੁਲਨਾ', 'तुलना'],
+    phrases: [
+      'mandi tulna karo', 'best mandi kaunsi hai', 'sabse acchi mandi', 'mandi comparison kaise karein',
+      'kaun si mandi zyada deti hai', 'net price kahan zyada hai', 'transport deduct karke',
+      'konsi mandi mein bechein', 'mujhe best mandi batao', 'मंडी तुलना', 'sabse faaydemand mandi',
+      'kahan le jaun fasal', 'azadpur better hai ya keshopur', 'delhi ya prayagraj kahan jaun',
+      'mandi comparison chart kahan hai', 'transport cost kya hai', 'net profit kahan zyada',
+      'kaunsi mandi mein rate acha hai', 'fasal kahan bechni chahiye',
+    ],
+    keywords: ['compare', 'tulna', 'तुलना', 'comparison', 'best mandi', 'sabse', 'zyada', 'net price', 'transport', 'ਤੁਲਨਾ', 'faayda', 'better', 'profit', 'chart', 'kahan', 'rate'],
     question: { en: 'How to compare mandis?', hi: 'मंडी तुलना कैसे करें?', pa: 'ਮੰਡੀ ਤੁਲਨਾ ਕਿਵੇਂ ਕਰੀਏ?', mr: 'मंडी तुलना कशी करावी?' },
     answer: { en: 'After checking a price on the Home screen, scroll down to see the Mandi Comparison chart. It deducts estimated transport cost and shows which mandi gives you the highest net price for your crop.', hi: 'होम स्क्रीन पर कीमत देखने के बाद नीचे स्क्रॉल करें — मंडी तुलना चार्ट दिखेगा। यह अनुमानित transport खर्च घटाकर बताता है कि किस मंडी में सबसे ज़्यादा net पैसा मिलेगा।', pa: 'ਹੋਮ ਸਕਰੀਨ ਤੇ ਭਾਅ ਦੇਖਣ ਤੋਂ ਬਾਅਦ ਹੇਠਾਂ ਸਕ੍ਰੋਲ ਕਰੋ — ਮੰਡੀ ਤੁਲਨਾ ਚਾਰਟ ਦਿਖੇਗਾ।', mr: 'होम स्क्रीनवर किंमत पाहिल्यानंतर खाली स्क्रोल करा — मंडी तुलना चार्ट दिसेल.' },
   },
@@ -437,7 +517,7 @@ function findAnswer(query: string, lang: Lang): { answer: string; found: boolean
     const crop = localStorage.getItem('selectedCrop') || '';
     const mandi = (localStorage.getItem('selectedMarket') || '').replace(' APMC', '');
     let contextHint = '';
-    if (crop && mandi && [5,6,7,8,9].includes(bestMatch)) {
+    if (crop && mandi && [7,8,9,10,11].includes(bestMatch)) {
       const ctxMap: Record<Lang, string> = {
         en: `_(You currently have **${crop}** @ **${mandi}** selected.)_\n\n`,
         hi: `_(आपने अभी **${crop}** @ **${mandi}** चुना हुआ है।)_\n\n`,
@@ -489,17 +569,23 @@ const PRICE_QUICK_CHIPS: Array<{ label: ML; query: string }> = [
 ];
 
 // App feature chips — QA actions for non-price features
+// QA array layout (after greeting=0, thanks=1 added at top):
+//  2=about, 3=free, 4=how-to-check, 5=mandis, 6=crops, 7=UP, 8=prediction,
+//  9=best-day, 10=alert, 11=compare, 12=language, 13=app-help, 14=accuracy,
+//  15=data-source, 16=past-trend, 17=mandi-info, 18=live-vs-estimated,
+//  19=notification-perm, 20=profile, 21=register, 22=data-freshness,
+//  23=offline, 24=screens, 25=seasonal
 const FEATURE_QUICK_CHIPS: Array<{ label: ML; qaIndex: number }> = [
-  { label: { en: '7-Day Forecast', hi: '7 दिन अनुमान', pa: '7 ਦਿਨ ਭਵਿੱਖਬਾਣੀ', mr: '7 दिवस अंदाज' }, qaIndex: 6 },   // prediction
-  { label: { en: 'Best Day to Sell', hi: 'कब बेचें?', pa: 'ਕਦੋਂ ਵੇਚੀਏ?', mr: 'कधी विकावे?' }, qaIndex: 7 },           // best_day
-  { label: { en: 'Set Price Alert', hi: 'अलर्ट लगाएं', pa: 'ਅਲਰਟ ਲਗਾਓ', mr: 'सूचना सेट करा' }, qaIndex: 8 },          // set_alert
-  { label: { en: 'Compare Mandis', hi: 'मंडी तुलना', pa: 'ਮੰਡੀ ਤੁਲਨਾ', mr: 'मंडी तुलना' }, qaIndex: 9 },               // compare
-  { label: { en: 'Which Mandis?', hi: 'कौन सी मंडी?', pa: 'ਕਿਹੜੀ ਮੰਡੀ?', mr: 'कोणती मंडी?' }, qaIndex: 3 },            // mandis
-  { label: { en: 'Which Crops?', hi: 'कौन सी फसल?', pa: 'ਕਿਹੜੀ ਫਸਲ?', mr: 'कोणते पीक?' }, qaIndex: 4 },               // crops
-  { label: { en: 'How Accurate?', hi: 'कितना सटीक?', pa: 'ਕਿੰਨਾ ਸਟੀਕ?', mr: 'किती अचूक?' }, qaIndex: 12 },             // accuracy
-  { label: { en: 'Data Source', hi: 'डेटा कहाँ से?', pa: 'ਡੇਟਾ ਕਿੱਥੋਂ?', mr: 'डेटा कुठून?' }, qaIndex: 13 },           // data_source
-  { label: { en: 'Change Language', hi: 'भाषा बदलें', pa: 'ਭਾਸ਼ਾ ਬਦਲੋ', mr: 'भाषा बदला' }, qaIndex: 10 },              // language
-  { label: { en: 'App not working?', hi: 'ऐप काम नहीं?', pa: 'ਐਪ ਕੰਮ ਨਹੀਂ?', mr: 'ॲप काम नाही?' }, qaIndex: 11 },     // app_help
+  { label: { en: '7-Day Forecast', hi: '7 दिन अनुमान', pa: '7 ਦਿਨ ਭਵਿੱਖਬਾਣੀ', mr: '7 दिवस अंदाज' }, qaIndex: 8 },
+  { label: { en: 'Best Day to Sell', hi: 'कब बेचें?', pa: 'ਕਦੋਂ ਵੇਚੀਏ?', mr: 'कधी विकावे?' }, qaIndex: 9 },
+  { label: { en: 'Set Price Alert', hi: 'अलर्ट लगाएं', pa: 'ਅਲਰਟ ਲਗਾਓ', mr: 'सूचना सेट करा' }, qaIndex: 10 },
+  { label: { en: 'Compare Mandis', hi: 'मंडी तुलना', pa: 'ਮੰਡੀ ਤੁਲਨਾ', mr: 'मंडी तुलना' }, qaIndex: 11 },
+  { label: { en: 'Which Mandis?', hi: 'कौन सी मंडी?', pa: 'ਕਿਹੜੀ ਮੰਡੀ?', mr: 'कोणती मंडी?' }, qaIndex: 5 },
+  { label: { en: 'Which Crops?', hi: 'कौन सी फसल?', pa: 'ਕਿਹੜੀ ਫਸਲ?', mr: 'कोणते पीक?' }, qaIndex: 6 },
+  { label: { en: 'How Accurate?', hi: 'कितना सटीक?', pa: 'ਕਿੰਨਾ ਸਟੀਕ?', mr: 'किती अचूक?' }, qaIndex: 14 },
+  { label: { en: 'Data Source', hi: 'डेटा कहाँ से?', pa: 'ਡੇਟਾ ਕਿੱਥੋਂ?', mr: 'डेटा कुठून?' }, qaIndex: 15 },
+  { label: { en: 'Change Language', hi: 'भाषा बदलें', pa: 'ਭਾਸ਼ਾ ਬਦਲੋ', mr: 'भाषा बदला' }, qaIndex: 12 },
+  { label: { en: 'App not working?', hi: 'ऐप काम नहीं?', pa: 'ਐਪ ਕੰਮ ਨਹੀਂ?', mr: 'ॲप काम नाही?' }, qaIndex: 13 },
 ];
 
 declare global { interface Window { SpeechRecognition: typeof SpeechRecognition; webkitSpeechRecognition: typeof SpeechRecognition; } }
@@ -590,7 +676,7 @@ export function SupportChat() {
     setTyping(true);
     await new Promise(r => setTimeout(r, 500));
 
-    // 1. Try price query detection first
+    // 1. Price query detection (crop name + price word)
     const priceDetect = detectPriceQuery(trimmed);
     if (priceDetect) {
       const { text: resp, priceCard } = await buildPriceResponse(priceDetect.crop, priceDetect.mandi, lang);
@@ -598,7 +684,13 @@ export function SupportChat() {
       deliverBotMessage({ from: 'bot', text: resp, priceCard, suggestions: suggs }, toTTSText(resp, lang));
       return;
     }
-    // 2. AI chat endpoint
+    // 2. QA NLP match — instant, no network needed
+    const { answer, found, matchedIndex } = findAnswer(trimmed, lang);
+    if (found) {
+      deliverBotMessage({ from: 'bot', text: answer, suggestions: getRelatedSuggestions(matchedIndex, lang) }, toTTSText(answer, lang));
+      return;
+    }
+    // 3. AI chat endpoint — only when QA has no answer (3s timeout to keep UX snappy)
     try {
       const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
       const r = await fetch(`${BASE_URL}/api/chat`, {
@@ -609,7 +701,7 @@ export function SupportChat() {
           crop: localStorage.getItem('selectedCrop') ?? undefined,
           mandi: localStorage.getItem('selectedMarket') ?? undefined,
         }),
-        signal: AbortSignal.timeout(9000),
+        signal: AbortSignal.timeout(3000),
       });
       if (r.ok) {
         const { reply } = await r.json();
@@ -619,12 +711,6 @@ export function SupportChat() {
         }
       }
     } catch {}
-    // 3. QA keyword match fallback
-    const { answer, found, matchedIndex } = findAnswer(trimmed, lang);
-    if (found) {
-      deliverBotMessage({ from: 'bot', text: answer, suggestions: getRelatedSuggestions(matchedIndex, lang) }, answer);
-      return;
-    }
     // 4. No match
     noAnswerSeedRef.current += 1;
     deliverBotMessage({
