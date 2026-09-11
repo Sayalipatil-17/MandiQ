@@ -81,6 +81,8 @@ export function PredictionScreen() {
   }, [crop, mkt]);
 
   const tp = hist.length ? Math.round(hist[hist.length - 1].modal_price) : 0;
+  const tpDisplay = tp > 0 ? tp : (preds.length ? Math.round(preds[0].predicted_price) : 0);
+  const tpIsEstimate = tp === 0 && tpDisplay > 0;
   const cd = preds.map(p => ({
     day: wd(p.date, lang),
     price: Math.round(p.predicted_price),
@@ -88,7 +90,7 @@ export function PredictionScreen() {
     upper: Math.round(p.upper_bound),
   }));
 
-  let bp = tp, bd = '', bi = -1;
+  let bp = tpDisplay, bd = '', bi = -1;
   preds.forEach((p, i) => {
     if (Math.round(p.predicted_price) > bp) { bp = Math.round(p.predicted_price); bd = wd(p.date, lang); bi = i; }
   });
@@ -145,8 +147,8 @@ export function PredictionScreen() {
           {/* Current Price Banner */}
           <div className="bg-gradient-to-br from-[#1e5631] to-[#2d6a3e] rounded-2xl p-5 text-white flex items-center justify-between">
             <div>
-              <p className="text-white/70 text-xs mb-1">{t('pred.currentPrice')}</p>
-              <p className="text-3xl font-bold">{tp > 0 ? `₹${tp.toLocaleString()}` : '--'}</p>
+              <p className="text-white/70 text-xs mb-1">{tpIsEstimate ? t('pred.estimatedPrice') : t('pred.currentPrice')}</p>
+              <p className="text-3xl font-bold">{tpDisplay > 0 ? `₹${tpDisplay.toLocaleString()}` : '--'}</p>
               <p className="text-white/60 text-xs mt-1">{t('common.perQuintal')}</p>
             </div>
             {bd && bp > 0 && (

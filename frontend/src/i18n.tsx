@@ -178,6 +178,7 @@ const dict: Record<string, Entry> = {
   'pred.submit':       { en: 'Submit Feedback', hi: 'प्रतिक्रिया भेजें', pa: 'ਫੀਡਬੈਕ ਭੇਜੋ', mr: 'अभिप्राय पाठवा' },
   'pred.noModel':      { en: 'Model must be trained and backend running.', hi: 'मॉडल ट्रेन होना चाहिए और बैकएंड चालू।', pa: 'ਮਾਡਲ ਟ੍ਰੇਨ ਹੋਣਾ ਚਾਹੀਦਾ ਤੇ ਬੈਕਐਂਡ ਚਾਲੂ।', mr: 'मॉडेल प्रशिक्षित आणि बॅकएंड चालू हवे.' },
   'pred.currentPrice': { en: 'Current Price', hi: 'वर्तमान कीमत', pa: 'ਮੌਜੂਦਾ ਭਾਅ', mr: 'सध्याची किंमत' },
+  'pred.estimatedPrice': { en: 'Est. Price', hi: 'अनुमानित कीमत', pa: 'ਅਨੁਮਾਨਿਤ ਭਾਅ', mr: 'अंदाजे किंमत' },
   'pred.bestForecast': { en: 'Best Forecast', hi: 'सर्वोत्तम अनुमान', pa: 'ਸਭ ਤੋਂ ਵਧੀਆ ਅਨੁਮਾਨ', mr: 'सर्वोत्तम अंदाज' },
   'pred.submitted':    { en: '🙏 Thank you for your feedback!', hi: '🙏 आपके फीडबैक के लिए धन्यवाद!', pa: '🙏 ਤੁਹਾਡੇ ਫੀਡਬੈਕ ਲਈ ਧੰਨਵਾਦ!', mr: '🙏 तुमच्या अभिप्रायाबद्दल धन्यवाद!' },
   'pred.feedbackOptPh':{ en: 'Comment (optional)…', hi: 'टिप्पणी (वैकल्पिक)…', pa: 'ਟਿੱਪਣੀ (ਵਿਕਲਪਿਕ)…', mr: 'टिप्पणी (पर्यायी)…' },
